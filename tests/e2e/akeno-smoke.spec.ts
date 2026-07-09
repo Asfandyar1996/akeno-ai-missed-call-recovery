@@ -26,6 +26,15 @@ test.describe("public product pages", () => {
     await expect(page.getByRole("heading", { name: "Contact Akeno" })).toBeVisible();
     await expect(page.getByText("info@akenobuilds.com")).toBeVisible();
 
+    await page.goto("/demo");
+    await expect(page.getByRole("heading", { name: "Missed Call Recovery Simulator" })).toBeVisible();
+    await page.getByRole("button", { name: "Trigger missed call" }).click();
+    await expect(page.getByText("Instant missed-call text")).toBeVisible();
+    await page.getByRole("button", { name: /Yes, water is actively coming in/ }).click();
+    await page.getByRole("button", { name: "Send" }).click();
+    await expect(page.getByText("Active kitchen ceiling leak")).toBeVisible();
+    await expect(page.getByText("Owner alert queued")).toBeVisible();
+
     await page.goto("/demo-chat");
     await expect(page.getByRole("heading", { name: "A roof leak, one missed call, and an urgent lead ready for dispatch." })).toBeVisible();
 

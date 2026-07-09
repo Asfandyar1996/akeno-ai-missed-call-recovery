@@ -94,6 +94,16 @@ body {
   background-size: 42px 42px, 42px 42px, auto, auto, auto;
 }
 
+.demo-simulator-grid {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.055) 1px, transparent 1px),
+    radial-gradient(circle at 82% 18%, rgba(34, 211, 238, 0.2), transparent 28%),
+    radial-gradient(circle at 14% 70%, rgba(16, 185, 129, 0.12), transparent 26%),
+    linear-gradient(135deg, #07111f 0%, #111827 56%, #06161b 100%);
+  background-size: 42px 42px, 42px 42px, auto, auto, auto;
+}
+
 .demo-panel {
   min-height: 0;
 }
