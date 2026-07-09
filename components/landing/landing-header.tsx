@@ -17,6 +17,12 @@ const navItems = [
   { href: "/contact", label: "Contact" }
 ];
 
+const compactNavItems = [
+  { href: "/", label: "Home" },
+  { href: "/privacy", label: "Privacy" },
+  { href: "/contact", label: "Contact" }
+];
+
 type LandingHeaderProps = {
   variant?: "dark" | "light";
 };
@@ -52,6 +58,33 @@ export function LandingHeader({ variant = "dark" }: LandingHeaderProps) {
               <AkenoLogo textClassName={dark ? "text-white" : "text-slate-950"} />
             </Link>
           </div>
+
+          <nav
+            className={cn(
+              "hidden items-center gap-1 rounded-full border px-2 py-1 text-sm md:flex lg:hidden",
+              dark ? "border-white/10 bg-white/7 text-white/74" : "border-slate-200 bg-slate-50 text-slate-600"
+            )}
+            aria-label="Compact navigation"
+          >
+            {compactNavItems.map((item) => {
+              const active = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-current={active ? "page" : undefined}
+                  className={cn(
+                    "rounded-full px-3 py-2 font-medium transition",
+                    active
+                      ? dark ? "bg-white/12 text-white" : "bg-white text-slate-950 shadow-sm"
+                      : dark ? "hover:bg-white/10 hover:text-white" : "hover:bg-white hover:text-slate-950 hover:shadow-sm"
+                  )}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
 
           <nav
             className={cn(
