@@ -105,9 +105,9 @@ This app needs a persistent Postgres database in production. Do not deploy it wi
 2. Add environment variables:
 
 ```bash
-DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DATABASE?sslmode=require"
-AKENO_ACCESS_USERNAME="akeno"
-AKENO_ACCESS_PASSWORD="use-a-real-password"
+DATABASE_URL=""
+AKENO_ACCESS_USERNAME=""
+AKENO_ACCESS_PASSWORD=""
 ```
 
 3. Deploy with Vercel.
