@@ -4,6 +4,13 @@ AI missed-call recovery platform for roofing and home-service businesses.
 
 Akeno is a production-style SaaS prototype that shows how missed inbound calls can be converted into qualified leads through instant SMS follow-up, roofing-specific AI intake, urgent lead routing, owner alerts, and CRM or Google Sheets handoff. The project combines a polished client-facing web app with an n8n/Twilio/OpenAI workflow architecture.
 
+## What This Demonstrates
+
+- End-to-end product thinking across frontend, workflow automation, AI guardrails, and lead operations
+- A real business use case with high-intent inbound leads, urgency detection, and human review
+- Full-stack implementation discipline: typed schemas, Prisma models, local sandbox fallbacks, responsive UI, and QA checks
+- Automation architecture that connects call/SMS events to lead creation, AI intake, conversation memory, and customer follow-up
+
 ## Product Context
 
 Roofing companies often lose high-intent leads when office lines are busy, calls arrive after hours, or urgent storm/leak calls go to voicemail. Akeno models a recovery system that responds immediately, gathers structured job details, flags urgent water-intrusion scenarios, and prepares the lead for human review.
@@ -37,6 +44,23 @@ The core product boundary is intentionally human-in-the-loop: the AI can collect
   <img src="qa-screenshots/senior-qa-onboarding-desktop-viewport.png" alt="Akeno onboarding workflow" width="760" />
 </p>
 
+## Automation Workflow
+
+The workflow layer models how the product would operate behind the interface. Voice-call and SMS webhooks enter separate paths, missed calls are normalized into recoverable lead sessions, and valid customer replies continue through roofing-specific AI intake before the conversation memory is updated and the next SMS is sent.
+
+<p>
+  <strong>Missed-call recovery workflow</strong><br />
+  <img src="qa-screenshots/akeno-automation-workflow.png" alt="Akeno missed-call recovery automation workflow" width="820" />
+</p>
+
+Key workflow paths:
+
+- Voice call received: generates call forwarding and returns routing instructions
+- Call status received: normalizes the outcome and detects whether the call was missed
+- Missed call detected: creates a recovery session, stores the contact, and sends an instant SMS
+- SMS reply received: loads the lead session, validates the sender, runs AI roofing intake, updates conversation memory, and sends the next message
+- Unknown sender: exits safely without polluting lead memory
+
 ## Engineering Scope
 
 - Responsive Next.js application with marketing, onboarding, dashboard, lead operations, integrations, privacy, contact, demo, and styleguide routes
@@ -47,6 +71,7 @@ The core product boundary is intentionally human-in-the-loop: the AI can collect
 - Mobile navigation patterns for both public pages and authenticated-style dashboard views
 - Akeno branding, favicon assets, responsive UI system, focus states, skip link, and reduced-motion support
 - Playwright smoke tests covering public routes, onboarding, dashboard, leads, and mobile drawers
+- Workflow automation design for missed-call detection, SMS recovery, AI intake, memory updates, and safe fallbacks
 
 ## System Design
 

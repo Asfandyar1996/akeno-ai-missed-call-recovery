@@ -28,3 +28,4 @@ qa-screenshots/*
 !qa-screenshots/final-leads.png
 !qa-screenshots/senior-qa-integrations-desktop-viewport.png
 !qa-screenshots/senior-qa-onboarding-desktop-viewport.png
+!qa-screenshots/akeno-automation-workflow.png
