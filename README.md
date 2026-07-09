@@ -12,13 +12,17 @@ The core product boundary is intentionally human-in-the-loop: the AI can collect
 
 ## Web App Screenshots
 
-![Akeno homepage mobile](qa-screenshots/senior-qa-home-mobile-viewport.png)
+![Akeno homepage desktop](qa-screenshots/senior-qa-home-desktop-viewport.png)
 
 ![Akeno operations dashboard](qa-screenshots/senior-qa-dashboard-desktop-viewport.png)
 
-![Akeno mobile dashboard navigation](qa-screenshots/senior-qa-dashboard-mobile-menu.png)
+![Akeno lead operations](qa-screenshots/final-leads.png)
 
-![Akeno onboarding workflow](qa-screenshots/senior-qa-onboarding-recheck-fixed.png)
+![Akeno integrations dashboard](qa-screenshots/senior-qa-integrations-desktop-viewport.png)
+
+![Akeno onboarding workflow](qa-screenshots/senior-qa-onboarding-desktop-viewport.png)
+
+![Akeno demo story](qa-screenshots/senior-qa-demo-chat-desktop.png)
 
 ## Engineering Scope
 

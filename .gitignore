@@ -23,7 +23,9 @@ playwright-report
 video-work
 
 qa-screenshots/*
-!qa-screenshots/senior-qa-home-mobile-viewport.png
+!qa-screenshots/senior-qa-home-desktop-viewport.png
 !qa-screenshots/senior-qa-dashboard-desktop-viewport.png
-!qa-screenshots/senior-qa-dashboard-mobile-menu.png
-!qa-screenshots/senior-qa-onboarding-recheck-fixed.png
+!qa-screenshots/final-leads.png
+!qa-screenshots/senior-qa-integrations-desktop-viewport.png
+!qa-screenshots/senior-qa-onboarding-desktop-viewport.png
+!qa-screenshots/senior-qa-demo-chat-desktop.png
