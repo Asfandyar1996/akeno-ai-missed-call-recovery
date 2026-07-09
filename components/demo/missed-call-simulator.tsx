@@ -1,10 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
-  ArrowRight,
   BellRing,
   Bot,
   CheckCircle2,
@@ -13,7 +11,6 @@ import {
   Database,
   Home,
   MessageSquareText,
-  PhoneCall,
   PhoneMissed,
   RefreshCcw,
   Send,
@@ -31,7 +28,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
 type ScenarioId = "active-leak" | "storm-damage" | "replacement" | "inspection";
-type Message = { id: number; from: "homeowner" | "akeno"; text: string; label?: string };
+type Stage = 0 | 1 | 2 | 3 | 4 | 5;
+type Message = { from: "homeowner" | "akeno"; text: string; label?: string };
 type LeadState = {
   customer: string;
   phone: string;
@@ -46,14 +44,28 @@ type LeadState = {
   confidence: number;
 };
 
+const emptyLead: LeadState = {
+  customer: "Unknown homeowner",
+  phone: "(214) 555-0138",
+  issue: "Waiting for missed call",
+  urgency: "Not started",
+  address: "Not collected",
+  propertyType: "Unknown",
+  insurance: "Unknown",
+  appointment: "Not collected",
+  summary: "No homeowner context captured yet.",
+  nextAction: "Trigger the missed-call recovery flow.",
+  confidence: 0
+};
+
 const scenarios: Record<
   ScenarioId,
   {
     title: string;
     icon: typeof CloudRain;
     description: string;
-    initial: string;
-    quickReplies: string[];
+    firstReply: string;
+    followUps: string[];
     lead: LeadState;
   }
 > = {
@@ -61,10 +73,10 @@ const scenarios: Record<
     title: "Active leak",
     icon: CloudRain,
     description: "Water is entering the home now. This should become an urgent lead.",
-    initial: "Water is coming through my kitchen ceiling after the storm. It is dripping into a bucket.",
-    quickReplies: [
-      "Yes, water is actively coming in. 1842 Cedar Grove Dr, Dallas. Tonight after 8 works.",
-      "It is a residential shingle roof, about 12 years old. I can send photos.",
+    firstReply: "Yes, water is actively coming in. 1842 Cedar Grove Dr, Dallas. Tonight after 8 works.",
+    followUps: [
+      "Residential shingle roof, about 12 years old.",
+      "I can send photos of the ceiling and roof.",
       "I may file insurance, but I need someone to stop the leak first."
     ],
     lead: {
@@ -85,10 +97,10 @@ const scenarios: Record<
     title: "Storm damage",
     icon: Siren,
     description: "A hail/wind lead needs qualification, photos, and insurance context.",
-    initial: "We had hail last night and I see shingles in the yard. I want someone to inspect it.",
-    quickReplies: [
-      "Address is 9308 Lake Hollow Ct, Plano. Residential. No active leak.",
-      "The roof is about 9 years old and I have photos of the shingles.",
+    firstReply: "Address is 9308 Lake Hollow Ct, Plano. Residential. No active leak.",
+    followUps: [
+      "The roof is about 9 years old.",
+      "I have photos of shingles in the yard.",
       "Insurance has not been opened yet. Tomorrow afternoon is best."
     ],
     lead: {
@@ -109,11 +121,11 @@ const scenarios: Record<
     title: "Roof replacement",
     icon: Home,
     description: "A non-urgent high-value quote request should still be captured cleanly.",
-    initial: "I need a roof replacement quote for an older house before listing it for sale.",
-    quickReplies: [
-      "It is a residential roof in Frisco, about 22 years old.",
+    firstReply: "It is a residential roof in Frisco, about 22 years old.",
+    followUps: [
       "No leak, but the inspection report says it is near end of life.",
-      "Weekday mornings work best. Address is 411 Sycamore Bend."
+      "Weekday mornings work best.",
+      "Address is 411 Sycamore Bend."
     ],
     lead: {
       customer: "Dana Collins",
@@ -133,10 +145,10 @@ const scenarios: Record<
     title: "Routine inspection",
     icon: ClipboardList,
     description: "A normal inspection request should be routed without emergency escalation.",
-    initial: "I just bought a house and want a roof inspection sometime next week.",
-    quickReplies: [
-      "No active leak. Address is 7620 Ridge Creek Ln, Fort Worth.",
-      "It is residential, roof age unknown, and Tuesday or Wednesday works.",
+    firstReply: "No active leak. Address is 7620 Ridge Creek Ln, Fort Worth.",
+    followUps: [
+      "It is residential, roof age unknown.",
+      "Tuesday or Wednesday works.",
       "I only need a condition report and repair recommendations."
     ],
     lead: {
@@ -155,13 +167,13 @@ const scenarios: Record<
   }
 };
 
-const workflowSteps = [
-  { key: "missed", label: "Missed call", icon: PhoneMissed },
-  { key: "sms", label: "Instant SMS", icon: MessageSquareText },
-  { key: "intake", label: "AI intake", icon: Bot },
-  { key: "memory", label: "Lead memory", icon: Database },
-  { key: "alert", label: "Team alert", icon: BellRing },
-  { key: "review", label: "Human review", icon: UserCheck }
+const checklist = [
+  { stage: 0, key: "scenario", label: "Choose lead type", detail: "Pick the roofing situation." },
+  { stage: 1, key: "missed", label: "Missed call detected", detail: "Akeno sends the recovery SMS." },
+  { stage: 2, key: "reply", label: "Homeowner replies", detail: "Send the homeowner context." },
+  { stage: 3, key: "ai", label: "AI qualifies lead", detail: "Urgency, address and intent are extracted." },
+  { stage: 4, key: "packet", label: "Lead packet ready", detail: "CRM preview and alert are shown." },
+  { stage: 5, key: "review", label: "Human confirms", detail: "The roofing team owns final dispatch." }
 ];
 
 const starterMessage =
@@ -169,28 +181,16 @@ const starterMessage =
 
 export function MissedCallSimulator() {
   const [scenarioId, setScenarioId] = useState<ScenarioId>("active-leak");
+  const [stage, setStage] = useState<Stage>(0);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState(scenarios["active-leak"].initial);
-  const [completedSteps, setCompletedSteps] = useState<string[]>([]);
-  const [lead, setLead] = useState<LeadState>({
-    customer: "Unknown homeowner",
-    phone: "(214) 555-0138",
-    issue: "Waiting for missed call",
-    urgency: "Not started",
-    address: "Not collected",
-    propertyType: "Unknown",
-    insurance: "Unknown",
-    appointment: "Not collected",
-    summary: "No homeowner context captured yet.",
-    nextAction: "Trigger the missed-call recovery flow.",
-    confidence: 0
-  });
+  const [input, setInput] = useState(scenarios["active-leak"].firstReply);
+  const [lead, setLead] = useState<LeadState>(emptyLead);
   const [typing, setTyping] = useState(false);
   const [ownerAlerted, setOwnerAlerted] = useState(false);
 
   const scenario = scenarios[scenarioId];
-  const progress = Math.round((completedSteps.length / workflowSteps.length) * 100);
-  const currentStep = workflowSteps.find((step) => !completedSteps.includes(step.key))?.key ?? "done";
+  const progress = Math.round((stage / (checklist.length - 1)) * 100);
+  const completeKeys = checklist.slice(0, stage).map((item) => item.key);
 
   const leadRows = useMemo(
     () => [
@@ -206,73 +206,60 @@ export function MissedCallSimulator() {
     [lead]
   );
 
+  useEffect(() => {
+    if (stage !== 1) return;
+    const timer = window.setTimeout(() => setStage(2), 850);
+    return () => window.clearTimeout(timer);
+  }, [stage]);
+
   const chooseScenario = (next: ScenarioId) => {
     setScenarioId(next);
-    setInput(scenarios[next].initial);
+    setInput(scenarios[next].firstReply);
+    setStage(0);
     setMessages([]);
-    setCompletedSteps([]);
+    setLead(emptyLead);
     setOwnerAlerted(false);
     setTyping(false);
-    setLead({
-      customer: "Unknown homeowner",
-      phone: "(214) 555-0138",
-      issue: "Waiting for missed call",
-      urgency: "Not started",
-      address: "Not collected",
-      propertyType: "Unknown",
-      insurance: "Unknown",
-      appointment: "Not collected",
-      summary: "No homeowner context captured yet.",
-      nextAction: "Trigger the missed-call recovery flow.",
-      confidence: 0
-    });
   };
 
   const triggerMissedCall = () => {
-    setCompletedSteps(["missed", "sms"]);
+    setMessages([{ from: "akeno", text: starterMessage, label: "Instant missed-call text" }]);
+    setLead({ ...emptyLead, phone: scenario.lead.phone, summary: "Missed call recovered. Waiting for homeowner details.", confidence: 22 });
     setOwnerAlerted(false);
-    setMessages([{ id: Date.now(), from: "akeno", text: starterMessage, label: "Instant missed-call text" }]);
-    setLead((current) => ({
-      ...current,
-      phone: scenario.lead.phone,
-      summary: "Missed call recovered. Waiting for homeowner details.",
-      nextAction: "Ask intake questions and classify urgency.",
-      confidence: 28
-    }));
+    setStage(1);
   };
 
   const sendMessage = (text = input) => {
     const clean = text.trim();
     if (!clean) return;
 
-    const now = Date.now();
-    setMessages((current) => [...current, { id: now, from: "homeowner", text: clean }]);
+    setMessages((current) => [...current, { from: "homeowner", text: clean }]);
     setInput("");
     setTyping(true);
+    setStage(3);
 
     window.setTimeout(() => {
       setTyping(false);
-      setCompletedSteps((current) => Array.from(new Set([...current, "missed", "sms", "intake", "memory", "alert"])));
-      setOwnerAlerted(scenario.lead.urgency !== "Routine");
       setLead(scenario.lead);
+      setOwnerAlerted(scenario.lead.urgency !== "Routine");
       setMessages((current) => [
         ...current,
         {
-          id: now + 1,
           from: "akeno",
           label: "AI intake response",
           text: buildReply(scenarioId, clean)
         }
       ]);
-    }, 520);
+      setStage(4);
+    }, 900);
   };
 
   const markHumanReview = () => {
-    setCompletedSteps((current) => Array.from(new Set([...current, "missed", "sms", "intake", "memory", "alert", "review"])));
     setLead((current) => ({
       ...current,
       nextAction: "Human reviewer has confirmed this lead is ready for dispatch follow-up."
     }));
+    setStage(5);
   };
 
   const resetDemo = () => chooseScenario(scenarioId);
@@ -282,119 +269,108 @@ export function MissedCallSimulator() {
       <LandingHeader />
 
       <section className="demo-simulator-grid border-b border-white/10">
-        <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[0.88fr_1.12fr] lg:px-8">
-          <div className="soft-enter">
+        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+          <div className="max-w-4xl">
             <div className="inline-flex items-center gap-2 rounded-full border border-cyan-300/25 bg-cyan-300/10 px-3 py-1 text-sm font-semibold text-cyan-100">
               <Sparkles className="h-4 w-4" />
-              Live simulator
+              Guided simulator
             </div>
-            <h1 className="mt-5 max-w-3xl text-4xl font-bold tracking-normal text-white sm:text-6xl">
-              Missed Call Recovery Simulator
-            </h1>
-            <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-300">
-              Trigger a missed roofing call, send homeowner replies, and watch Akeno update the SMS thread,
-              workflow state, lead packet, urgency classification, and owner alert in real time.
+            <h1 className="mt-5 text-4xl font-bold tracking-normal text-white sm:text-6xl">Missed Call Recovery Simulator</h1>
+            <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-300">
+              Follow one clear sequence: choose a roofing scenario, trigger the missed call, send the homeowner reply,
+              then watch Akeno build the lead packet and hand it to a human reviewer.
             </p>
-            <div className="mt-7 flex flex-wrap gap-3">
-              <Button size="lg" className="bg-cyan-400 text-slate-950 hover:bg-cyan-300" onClick={triggerMissedCall}>
-                <PhoneMissed className="h-4 w-4" />
-                Trigger missed call
-              </Button>
-              <Button size="lg" variant="outline" className="border-white/16 bg-white/8 text-white hover:bg-white/12" onClick={resetDemo}>
-                <RefreshCcw className="h-4 w-4" />
-                Reset simulator
-              </Button>
-              <Link
-                href="/demo-chat"
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-md border border-white/16 bg-white/8 px-5 text-sm font-semibold text-white hover:bg-white/12"
-              >
-                View storyboard <ArrowRight className="h-4 w-4" />
-              </Link>
-            </div>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            {(Object.entries(scenarios) as Array<[ScenarioId, typeof scenario]>).map(([id, item]) => {
-              const Icon = item.icon;
-              const active = id === scenarioId;
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => chooseScenario(id)}
-                  className={cn(
-                    "rounded-lg border p-4 text-left transition",
-                    active
-                      ? "border-cyan-300/60 bg-cyan-300/14 shadow-lg shadow-cyan-950/20"
-                      : "border-white/12 bg-white/8 hover:border-white/30 hover:bg-white/12"
-                  )}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className={cn("grid h-10 w-10 place-items-center rounded-md", active ? "bg-cyan-300 text-slate-950" : "bg-white/10 text-cyan-200")}>
-                      <Icon className="h-5 w-5" />
-                    </span>
-                    <div>
-                      <p className="font-semibold text-white">{item.title}</p>
-                      <p className="mt-1 text-xs leading-5 text-slate-300">{item.description}</p>
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
           </div>
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-7xl gap-5 px-4 py-6 sm:px-6 lg:grid-cols-[0.72fr_1.08fr_0.82fr] lg:px-8">
-        <WorkflowPanel completedSteps={completedSteps} currentStep={currentStep} progress={progress} ownerAlerted={ownerAlerted} />
-        <ChatPanel
-          input={input}
-          messages={messages}
-          quickReplies={scenario.quickReplies}
-          scenarioInitial={scenario.initial}
-          typing={typing}
-          onInput={setInput}
-          onSend={sendMessage}
+      <section className="mx-auto grid max-w-7xl gap-5 px-4 py-6 sm:px-6 lg:grid-cols-[360px_1fr] lg:px-8">
+        <ChecklistPanel
+          completeKeys={completeKeys}
+          ownerAlerted={ownerAlerted}
+          progress={progress}
+          scenarioTitle={scenario.title}
+          stage={stage}
+          onReset={resetDemo}
         />
-        <LeadPanel lead={lead} leadRows={leadRows} ownerAlerted={ownerAlerted} onReview={markHumanReview} />
+
+        <section className="min-h-[680px] rounded-lg border border-white/12 bg-white/8 p-4 shadow-2xl backdrop-blur sm:p-5">
+          {stage === 0 ? (
+            <ScenarioStep scenarioId={scenarioId} onChoose={chooseScenario} onTrigger={triggerMissedCall} />
+          ) : null}
+
+          {stage === 1 ? (
+            <MissedCallStep messages={messages} />
+          ) : null}
+
+          {stage === 2 ? (
+            <ReplyStep
+              input={input}
+              messages={messages}
+              onInput={setInput}
+              onSend={sendMessage}
+              scenario={scenario}
+            />
+          ) : null}
+
+          {stage === 3 ? (
+            <ProcessingStep messages={messages} typing={typing} />
+          ) : null}
+
+          {stage === 4 ? (
+            <LeadPacketStep lead={lead} leadRows={leadRows} messages={messages} ownerAlerted={ownerAlerted} onReview={markHumanReview} />
+          ) : null}
+
+          {stage === 5 ? (
+            <ReviewStep lead={lead} leadRows={leadRows} messages={messages} ownerAlerted={ownerAlerted} onReset={resetDemo} />
+          ) : null}
+        </section>
       </section>
     </main>
   );
 }
 
-function WorkflowPanel({
-  completedSteps,
-  currentStep,
+function ChecklistPanel({
+  completeKeys,
+  onReset,
   ownerAlerted,
-  progress
+  progress,
+  scenarioTitle,
+  stage
 }: {
-  completedSteps: string[];
-  currentStep: string;
+  completeKeys: string[];
+  onReset: () => void;
   ownerAlerted: boolean;
   progress: number;
+  scenarioTitle: string;
+  stage: Stage;
 }) {
   return (
-    <aside className="rounded-lg border border-white/12 bg-white/8 p-4 shadow-2xl backdrop-blur">
+    <aside className="h-fit rounded-lg border border-white/12 bg-white/8 p-4 shadow-2xl backdrop-blur lg:sticky lg:top-20">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-sm font-semibold text-cyan-100">Workflow execution</p>
-          <h2 className="mt-1 text-2xl font-bold">Recovery pipeline</h2>
+          <p className="text-sm font-semibold text-cyan-100">Demo checklist</p>
+          <h2 className="mt-1 text-2xl font-bold">Step-by-step</h2>
         </div>
         <Badge className="bg-cyan-300/15 text-cyan-100">{progress}%</Badge>
       </div>
       <Progress value={progress} className="mt-4 bg-white/10" />
 
+      <div className="mt-5 rounded-lg border border-white/10 bg-white/7 p-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Selected scenario</p>
+        <p className="mt-1 font-semibold text-white">{scenarioTitle}</p>
+      </div>
+
       <div className="mt-5 space-y-3">
-        {workflowSteps.map((step, index) => {
-          const Icon = step.icon;
-          const done = completedSteps.includes(step.key);
-          const active = currentStep === step.key;
+        {checklist.map((item, index) => {
+          const done = completeKeys.includes(item.key);
+          const active = stage === item.stage;
           return (
-            <div key={step.key} className="flex gap-3">
+            <div key={item.key} className="flex gap-3">
               <div className="flex flex-col items-center">
                 <span
                   className={cn(
-                    "grid h-9 w-9 place-items-center rounded-full border",
+                    "grid h-9 w-9 place-items-center rounded-full border text-sm font-bold",
                     done
                       ? "border-emerald-300 bg-emerald-400 text-slate-950"
                       : active
@@ -402,13 +378,13 @@ function WorkflowPanel({
                         : "border-white/14 bg-white/8 text-white/48"
                   )}
                 >
-                  {done ? <CheckCircle2 className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
+                  {done ? <CheckCircle2 className="h-4 w-4" /> : index + 1}
                 </span>
-                {index < workflowSteps.length - 1 ? <span className={cn("h-7 w-px", done ? "bg-emerald-300/70" : "bg-white/12")} /> : null}
+                {index < checklist.length - 1 ? <span className={cn("h-8 w-px", done ? "bg-emerald-300/70" : "bg-white/12")} /> : null}
               </div>
               <div className="pt-1">
-                <p className={cn("text-sm font-semibold", done ? "text-white" : active ? "text-cyan-100" : "text-white/54")}>{step.label}</p>
-                <p className="mt-1 text-xs leading-5 text-slate-400">{workflowCopy(step.key, done, active)}</p>
+                <p className={cn("text-sm font-semibold", done ? "text-white" : active ? "text-cyan-100" : "text-white/54")}>{item.label}</p>
+                <p className="mt-1 text-xs leading-5 text-slate-400">{item.detail}</p>
               </div>
             </div>
           );
@@ -418,113 +394,339 @@ function WorkflowPanel({
       <div className={cn("mt-5 rounded-lg border p-4", ownerAlerted ? "border-orange-300/40 bg-orange-500/14" : "border-white/10 bg-white/7")}>
         <div className="flex items-center gap-2 text-sm font-semibold">
           {ownerAlerted ? <AlertTriangle className="h-4 w-4 text-orange-300" /> : <ShieldCheck className="h-4 w-4 text-cyan-200" />}
-          {ownerAlerted ? "Owner alert queued" : "Waiting for urgency signal"}
+          {ownerAlerted ? "Owner alert queued" : "No escalation yet"}
         </div>
         <p className="mt-2 text-xs leading-5 text-slate-300">
-          {ownerAlerted
-            ? "The workflow would notify the owner or dispatcher before the lead goes cold."
-            : "Routine leads stay in dispatch; urgent leaks and storm events escalate."}
+          {ownerAlerted ? "Urgent or elevated leads are routed before they go cold." : "Routine leads stay in normal dispatch."}
         </p>
       </div>
+
+      <Button variant="outline" className="mt-4 w-full border-white/16 bg-white/8 text-white hover:bg-white/12" onClick={onReset}>
+        <RefreshCcw className="h-4 w-4" />
+        Reset demo
+      </Button>
     </aside>
   );
 }
 
-function ChatPanel({
+function ScenarioStep({
+  onChoose,
+  onTrigger,
+  scenarioId
+}: {
+  onChoose: (value: ScenarioId) => void;
+  onTrigger: () => void;
+  scenarioId: ScenarioId;
+}) {
+  return (
+    <div>
+      <StepHeader
+        eyebrow="Step 1"
+        icon={Workflow}
+        title="Choose the missed-call scenario"
+        text="This controls what the homeowner says and how Akeno classifies urgency."
+      />
+
+      <div className="mt-6 grid gap-3 md:grid-cols-2">
+        {(Object.entries(scenarios) as Array<[ScenarioId, (typeof scenarios)[ScenarioId]]>).map(([id, scenario]) => {
+          const Icon = scenario.icon;
+          const active = id === scenarioId;
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={() => onChoose(id)}
+              className={cn(
+                "rounded-lg border p-4 text-left transition",
+                active ? "border-cyan-300/60 bg-cyan-300/14 shadow-lg shadow-cyan-950/20" : "border-white/12 bg-white/8 hover:border-white/30 hover:bg-white/12"
+              )}
+            >
+              <div className="flex items-start gap-3">
+                <span className={cn("grid h-11 w-11 place-items-center rounded-md", active ? "bg-cyan-300 text-slate-950" : "bg-white/10 text-cyan-200")}>
+                  <Icon className="h-5 w-5" />
+                </span>
+                <div>
+                  <p className="font-semibold text-white">{scenario.title}</p>
+                  <p className="mt-1 text-sm leading-6 text-slate-300">{scenario.description}</p>
+                </div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="mt-6 rounded-lg border border-cyan-300/20 bg-cyan-300/10 p-5">
+        <p className="text-sm font-semibold text-cyan-100">What happens next</p>
+        <p className="mt-2 text-sm leading-6 text-slate-300">
+          Click the button below. The simulator will show the missed call, automatically send Akeno&apos;s recovery SMS,
+          then move you to the homeowner reply step.
+        </p>
+        <Button size="lg" className="mt-4 bg-cyan-400 text-slate-950 hover:bg-cyan-300" onClick={onTrigger}>
+          <PhoneMissed className="h-4 w-4" />
+          Trigger missed call
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function MissedCallStep({ messages }: { messages: Message[] }) {
+  return (
+    <div>
+      <StepHeader
+        eyebrow="Step 2"
+        icon={PhoneMissed}
+        title="Akeno detects the missed call"
+        text="The roofing company missed the call, so Akeno immediately sends a recovery text. The next step appears automatically."
+      />
+      <div className="mt-6 grid gap-4 lg:grid-cols-[0.8fr_1fr]">
+        <div className="rounded-lg border border-orange-300/30 bg-orange-500/12 p-5">
+          <div className="flex items-center gap-3">
+            <span className="grid h-12 w-12 place-items-center rounded-full bg-orange-500 text-white">
+              <PhoneMissed className="h-6 w-6" />
+            </span>
+            <div>
+              <p className="text-sm font-semibold uppercase text-orange-100/80">Call status</p>
+              <h3 className="text-2xl font-bold text-white">Missed call</h3>
+            </div>
+          </div>
+          <p className="mt-5 text-sm leading-6 text-orange-50/85">Akeno starts recovery before the homeowner calls another contractor.</p>
+        </div>
+        <PhoneThread messages={messages} typing={false} />
+      </div>
+    </div>
+  );
+}
+
+function ReplyStep({
   input,
   messages,
   onInput,
   onSend,
-  quickReplies,
-  scenarioInitial,
-  typing
+  scenario
 }: {
   input: string;
   messages: Message[];
   onInput: (value: string) => void;
   onSend: (value?: string) => void;
-  quickReplies: string[];
-  scenarioInitial: string;
-  typing: boolean;
+  scenario: (typeof scenarios)[ScenarioId];
 }) {
   return (
-    <section className="rounded-lg border border-white/12 bg-white/8 p-4 shadow-2xl backdrop-blur">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="text-sm font-semibold text-cyan-100">Homeowner SMS</p>
-          <h2 className="mt-1 text-2xl font-bold">Live intake thread</h2>
-        </div>
-        <Badge className="bg-white/10 text-white">Simulator</Badge>
-      </div>
-
-      <div className="mt-4 h-[430px] overflow-y-auto rounded-lg border border-slate-800 bg-[#e9ded0] p-4 text-slate-950">
-        {messages.length === 0 ? (
-          <div className="grid h-full place-items-center text-center">
-            <div>
-              <PhoneCall className="mx-auto h-10 w-10 text-slate-400" />
-              <p className="mt-3 font-semibold">Trigger a missed call to start the recovery thread.</p>
-              <p className="mt-2 text-sm text-slate-600">Akeno will send the first text, then you can reply as the homeowner.</p>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {messages.map((message) => (
-              <div key={message.id} className={cn("flex", message.from === "akeno" ? "justify-start" : "justify-end")}>
-                <div
-                  className={cn(
-                    "max-w-[82%] rounded-lg px-4 py-3 text-sm leading-6 shadow",
-                    message.from === "akeno" ? "bg-white text-slate-800" : "bg-[#d9fdd3] text-slate-900"
-                  )}
-                >
-                  {message.label ? <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-cyan-700">{message.label}</p> : null}
-                  {message.text}
-                </div>
-              </div>
+    <div>
+      <StepHeader
+        eyebrow="Step 3"
+        icon={MessageSquareText}
+        title="Send the homeowner reply"
+        text="Use one suggested reply or type your own. After you send it, Akeno automatically qualifies the lead."
+      />
+      <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_0.9fr]">
+        <PhoneThread messages={messages} typing={false} />
+        <div className="rounded-lg border border-white/12 bg-white/8 p-4">
+          <p className="text-sm font-semibold text-cyan-100">Homeowner reply</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {[scenario.firstReply, ...scenario.followUps].map((reply) => (
+              <button
+                key={reply}
+                type="button"
+                onClick={() => onInput(reply)}
+                className="rounded-full border border-white/14 bg-white/8 px-3 py-1.5 text-xs font-semibold text-slate-100 hover:bg-white/12"
+              >
+                {reply}
+              </button>
             ))}
-            {typing ? (
-              <div className="flex justify-start">
-                <div className="flex items-center gap-1 rounded-lg bg-white px-4 py-3 shadow">
-                  <span className="typing-dot" />
-                  <span className="typing-dot" style={{ animationDelay: "0.14s" }} />
-                  <span className="typing-dot" style={{ animationDelay: "0.28s" }} />
-                </div>
-              </div>
-            ) : null}
           </div>
-        )}
-      </div>
-
-      <div className="mt-4 grid gap-3">
-        <div className="flex flex-wrap gap-2">
-          {[scenarioInitial, ...quickReplies].map((reply) => (
-            <button
-              key={reply}
-              type="button"
-              onClick={() => onInput(reply)}
-              className="rounded-full border border-white/14 bg-white/8 px-3 py-1.5 text-xs font-semibold text-slate-100 hover:bg-white/12"
-            >
-              {reply.length > 52 ? `${reply.slice(0, 52)}...` : reply}
-            </button>
-          ))}
-        </div>
-        <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
           <Textarea
             value={input}
             onChange={(event) => onInput(event.target.value)}
+            className="mt-4 min-h-[120px] border-white/14 bg-white/95 text-slate-950"
             placeholder="Type as the homeowner..."
-            className="min-h-[76px] border-white/14 bg-white/95 text-slate-950"
           />
-          <Button className="h-full min-h-[76px] bg-cyan-400 text-slate-950 hover:bg-cyan-300" onClick={() => onSend()}>
+          <Button className="mt-3 w-full bg-cyan-400 text-slate-950 hover:bg-cyan-300" onClick={() => onSend()}>
             <Send className="h-4 w-4" />
             Send
           </Button>
         </div>
       </div>
-    </section>
+    </div>
   );
 }
 
-function LeadPanel({
+function ProcessingStep({ messages, typing }: { messages: Message[]; typing: boolean }) {
+  return (
+    <div>
+      <StepHeader
+        eyebrow="Step 4"
+        icon={Bot}
+        title="Akeno qualifies the lead"
+        text="The simulator is extracting urgency, address, job type, insurance context, and appointment intent."
+      />
+      <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_0.85fr]">
+        <PhoneThread messages={messages} typing={typing} />
+        <div className="rounded-lg border border-white/12 bg-white/8 p-5">
+          <div className="flex items-center gap-3">
+            <span className="grid h-11 w-11 place-items-center rounded-md bg-cyan-300 text-slate-950">
+              <Bot className="h-5 w-5" />
+            </span>
+            <div>
+              <p className="font-semibold text-white">AI intake running</p>
+              <p className="mt-1 text-sm text-slate-300">Moving to lead packet automatically...</p>
+            </div>
+          </div>
+          <div className="mt-5 space-y-3">
+            {["Classify issue", "Check urgency", "Extract address", "Prepare handoff"].map((label, index) => (
+              <div key={label} className="flex items-center gap-3 rounded-md border border-white/10 bg-white/7 p-3">
+                <span className="grid h-7 w-7 place-items-center rounded-full bg-emerald-400 text-slate-950 text-xs font-bold">{index + 1}</span>
+                <span className="text-sm font-semibold text-white">{label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LeadPacketStep({
+  lead,
+  leadRows,
+  messages,
+  onReview,
+  ownerAlerted
+}: {
+  lead: LeadState;
+  leadRows: string[][];
+  messages: Message[];
+  onReview: () => void;
+  ownerAlerted: boolean;
+}) {
+  return (
+    <div>
+      <StepHeader
+        eyebrow="Step 5"
+        icon={Database}
+        title="Lead packet is ready"
+        text="The right data is now ready for a dispatcher, CRM, or Google Sheet handoff."
+      />
+      <div className="mt-6 grid gap-4 xl:grid-cols-[0.9fr_1fr]">
+        <PhoneThread messages={messages} typing={false} />
+        <LeadCard lead={lead} leadRows={leadRows} ownerAlerted={ownerAlerted} onReview={onReview} />
+      </div>
+    </div>
+  );
+}
+
+function ReviewStep({
+  lead,
+  leadRows,
+  messages,
+  onReset,
+  ownerAlerted
+}: {
+  lead: LeadState;
+  leadRows: string[][];
+  messages: Message[];
+  onReset: () => void;
+  ownerAlerted: boolean;
+}) {
+  return (
+    <div>
+      <StepHeader
+        eyebrow="Step 6"
+        icon={UserCheck}
+        title="Human review completed"
+        text="The AI has captured and prepared the lead. A human still confirms dispatch, pricing, insurance, and service commitments."
+      />
+      <div className="mt-6 grid gap-4 xl:grid-cols-[0.9fr_1fr]">
+        <PhoneThread messages={messages} typing={false} />
+        <div className="space-y-4">
+          <LeadCard lead={lead} leadRows={leadRows} ownerAlerted={ownerAlerted} />
+          <div className="rounded-lg border border-emerald-300/30 bg-emerald-400/12 p-5">
+            <div className="flex items-center gap-3">
+              <span className="grid h-11 w-11 place-items-center rounded-full bg-emerald-400 text-slate-950">
+                <CheckCircle2 className="h-5 w-5" />
+              </span>
+              <div>
+                <p className="font-semibold text-white">Ready for roofing team follow-up</p>
+                <p className="mt-1 text-sm leading-6 text-slate-300">
+                  The lead is qualified, summarized, routed, and marked for human confirmation.
+                </p>
+              </div>
+            </div>
+            <Button className="mt-4 bg-white text-slate-950 hover:bg-cyan-100" onClick={onReset}>
+              <RefreshCcw className="h-4 w-4" />
+              Run another scenario
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StepHeader({
+  eyebrow,
+  icon: Icon,
+  text,
+  title
+}: {
+  eyebrow: string;
+  icon: typeof Bot;
+  text: string;
+  title: string;
+}) {
+  return (
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <div>
+        <p className="text-sm font-semibold text-cyan-100">{eyebrow}</p>
+        <h2 className="mt-1 text-3xl font-bold tracking-normal text-white">{title}</h2>
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">{text}</p>
+      </div>
+      <span className="grid h-12 w-12 shrink-0 place-items-center rounded-lg bg-cyan-300 text-slate-950">
+        <Icon className="h-6 w-6" />
+      </span>
+    </div>
+  );
+}
+
+function PhoneThread({ messages, typing }: { messages: Message[]; typing: boolean }) {
+  return (
+    <div className="rounded-lg border border-slate-800 bg-[#e9ded0] p-4 text-slate-950 shadow-2xl">
+      <div className="mb-4 flex items-center justify-between border-b border-slate-300 pb-3">
+        <div>
+          <p className="text-sm font-bold">RidgeLine Roofing</p>
+          <p className="text-xs text-slate-500">SMS recovery thread</p>
+        </div>
+        <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-800">Live</span>
+      </div>
+      <div className="min-h-[360px] space-y-3">
+        {messages.map((message, index) => (
+          <div key={`${message.from}-${index}-${message.text.slice(0, 12)}`} className={cn("flex", message.from === "akeno" ? "justify-start" : "justify-end")}>
+            <div
+              className={cn(
+                "max-w-[84%] rounded-lg px-4 py-3 text-sm leading-6 shadow",
+                message.from === "akeno" ? "bg-white text-slate-800" : "bg-[#d9fdd3] text-slate-900"
+              )}
+            >
+              {message.label ? <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-cyan-700">{message.label}</p> : null}
+              {message.text}
+            </div>
+          </div>
+        ))}
+        {typing ? (
+          <div className="flex justify-start">
+            <div className="flex items-center gap-1 rounded-lg bg-white px-4 py-3 shadow">
+              <span className="typing-dot" />
+              <span className="typing-dot" style={{ animationDelay: "0.14s" }} />
+              <span className="typing-dot" style={{ animationDelay: "0.28s" }} />
+            </div>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function LeadCard({
   lead,
   leadRows,
   onReview,
@@ -532,62 +734,60 @@ function LeadPanel({
 }: {
   lead: LeadState;
   leadRows: string[][];
+  onReview?: () => void;
   ownerAlerted: boolean;
-  onReview: () => void;
 }) {
   return (
-    <aside className="space-y-5">
-      <section className="rounded-lg border border-white/12 bg-white/8 p-4 shadow-2xl backdrop-blur">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-sm font-semibold text-cyan-100">Lead packet</p>
-            <h2 className="mt-1 text-2xl font-bold">Live CRM preview</h2>
+    <div className="rounded-lg border border-white/12 bg-white/8 p-4 shadow-2xl backdrop-blur">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-cyan-100">Live CRM preview</p>
+          <h3 className="mt-1 text-2xl font-bold">Lead packet</h3>
+        </div>
+        <UrgencyBadge urgency={lead.urgency} />
+      </div>
+
+      <div className="mt-5 grid gap-2 md:grid-cols-2">
+        {leadRows.map(([label, value]) => (
+          <div key={label} className="rounded-md border border-white/10 bg-white/7 px-3 py-2 text-sm">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{label}</p>
+            <p className="mt-1 font-semibold text-white">{value}</p>
           </div>
-          <UrgencyBadge urgency={lead.urgency} />
-        </div>
+        ))}
+      </div>
 
-        <div className="mt-5 space-y-2">
-          {leadRows.map(([label, value]) => (
-            <div key={label} className="grid grid-cols-[112px_1fr] gap-3 rounded-md border border-white/10 bg-white/7 px-3 py-2 text-sm">
-              <span className="text-slate-400">{label}</span>
-              <span className="font-semibold text-white">{value}</span>
-            </div>
-          ))}
-        </div>
+      <div className="mt-4 rounded-lg border border-cyan-300/20 bg-cyan-300/10 p-4">
+        <p className="text-sm font-semibold text-cyan-100">AI summary</p>
+        <p className="mt-2 text-sm leading-6 text-slate-200">{lead.summary}</p>
+      </div>
 
-        <div className="mt-4 rounded-lg border border-cyan-300/20 bg-cyan-300/10 p-4">
-          <p className="text-sm font-semibold text-cyan-100">AI summary</p>
-          <p className="mt-2 text-sm leading-6 text-slate-200">{lead.summary}</p>
+      <div className="mt-4">
+        <div className="flex items-center justify-between text-sm">
+          <span className="font-semibold text-white">Qualification confidence</span>
+          <span className="text-cyan-100">{lead.confidence}%</span>
         </div>
+        <Progress value={lead.confidence} className="mt-2 bg-white/10" />
+      </div>
 
-        <div className="mt-4">
-          <div className="flex items-center justify-between text-sm">
-            <span className="font-semibold text-white">Qualification confidence</span>
-            <span className="text-cyan-100">{lead.confidence}%</span>
-          </div>
-          <Progress value={lead.confidence} className="mt-2 bg-white/10" />
-        </div>
-      </section>
-
-      <section className={cn("rounded-lg border p-4 shadow-2xl backdrop-blur", ownerAlerted ? "border-orange-300/30 bg-orange-500/12" : "border-white/12 bg-white/8")}>
-        <div className="flex items-center gap-3">
+      <div className={cn("mt-4 rounded-lg border p-4", ownerAlerted ? "border-orange-300/30 bg-orange-500/12" : "border-white/10 bg-white/7")}>
+        <div className="flex items-start gap-3">
           <span className={cn("grid h-10 w-10 place-items-center rounded-md", ownerAlerted ? "bg-orange-400 text-slate-950" : "bg-white/10 text-cyan-200")}>
             {ownerAlerted ? <BellRing className="h-5 w-5" /> : <Workflow className="h-5 w-5" />}
           </span>
           <div>
-            <p className="text-sm font-semibold text-white">Recommended next action</p>
+            <p className="text-sm font-semibold text-white">{ownerAlerted ? "Owner alert queued" : "Normal dispatch path"}</p>
             <p className="mt-1 text-xs leading-5 text-slate-300">{lead.nextAction}</p>
           </div>
         </div>
+      </div>
+
+      {onReview ? (
         <Button className="mt-4 w-full bg-white text-slate-950 hover:bg-cyan-100" onClick={onReview}>
           <UserCheck className="h-4 w-4" />
           Mark human reviewed
         </Button>
-        <p className="mt-3 text-xs leading-5 text-slate-400">
-          Akeno can capture and classify the lead. A person still confirms dispatch, pricing, safety-sensitive guidance, and insurance commitments.
-        </p>
-      </section>
-    </aside>
+      ) : null}
+    </div>
   );
 }
 
@@ -615,20 +815,4 @@ function buildReply(scenarioId: ScenarioId, text: string) {
     return "I captured the leak detail and flagged it for review. The team will confirm whether this should be routed as urgent.";
   }
   return "Thanks. I captured the inspection request, address, and preferred appointment timing. The office will confirm an available slot.";
-}
-
-function workflowCopy(key: string, done: boolean, active: boolean) {
-  if (done) {
-    const doneCopy: Record<string, string> = {
-      missed: "Inbound call status was classified as missed.",
-      sms: "Recovery text was sent before the lead went cold.",
-      intake: "AI intake extracted issue, urgency, address, and timing.",
-      memory: "Lead memory was updated for handoff.",
-      alert: "Team notification path was selected.",
-      review: "Human reviewer confirms final next step."
-    };
-    return doneCopy[key];
-  }
-  if (active) return "Waiting for the next simulator action.";
-  return "Pending";
 }

@@ -31,9 +31,9 @@ test.describe("public product pages", () => {
     await page.getByRole("button", { name: "Trigger missed call" }).click();
     await expect(page.getByText("Instant missed-call text")).toBeVisible();
     await page.getByRole("button", { name: /Yes, water is actively coming in/ }).click();
-    await page.getByRole("button", { name: "Send" }).click();
+    await page.getByRole("button", { name: "Send", exact: true }).click();
     await expect(page.getByText("Active kitchen ceiling leak")).toBeVisible();
-    await expect(page.getByText("Owner alert queued")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Mark human reviewed" })).toBeVisible();
 
     await page.goto("/demo-chat");
     await expect(page.getByRole("heading", { name: "A roof leak, one missed call, and an urgent lead ready for dispatch." })).toBeVisible();
