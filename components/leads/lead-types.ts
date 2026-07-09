@@ -1,0 +1,27 @@
+export type LeadView = {
+  id: string;
+  customerName: string;
+  phone: string;
+  propertyAddress: string;
+  zip: string;
+  city: string;
+  state: string;
+  serviceRequested: string;
+  urgency: "Urgent" | "Standard" | "Low" | string;
+  status: "New" | "Contacted" | "Qualified" | "Booked" | "Closed" | "Lost" | string;
+  assignedPerson: string;
+  activeLeak: boolean;
+  propertyType: string;
+  roofType: string | null;
+  roofAge: string | null;
+  stormDamage: boolean;
+  insuranceStatus: string | null;
+  preferredAppointment: string | null;
+  photosJson: string;
+  conversationJson: string;
+  notificationsJson: string;
+  crmSyncStatus: string;
+  leadSummary: string;
+  estimatedValue: number;
+  createdAt: string;
+};

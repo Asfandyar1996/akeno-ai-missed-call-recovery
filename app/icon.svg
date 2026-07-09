@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Akeno">
+  <defs>
+    <linearGradient id="favicon-bg" x1="92" x2="420" y1="72" y2="444" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7dd3fc"/>
+      <stop offset="0.42" stop-color="#14b8a6"/>
+      <stop offset="1" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="favicon-glow" x1="150" x2="380" y1="84" y2="396" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.72"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="118" fill="#08111f"/>
+  <rect x="42" y="42" width="428" height="428" rx="98" fill="url(#favicon-bg)"/>
+  <path d="M91 318c36-112 125-196 267-250-66 72-94 157-82 256 8 67 39 110 82 120-145-18-234-60-267-126Z" fill="url(#favicon-glow)"/>
+  <path d="M256 92 407 420h-86l-28-68h-76l-28 68h-84L256 92Z" fill="#f8fafc"/>
+  <path d="M235 291h42l-21-56-21 56Z" fill="#0f172a"/>
+  <path d="M143 394 377 160" stroke="#0f172a" stroke-linecap="round" stroke-width="34" opacity="0.92"/>
+  <path d="M153 384 387 150" stroke="#f8fafc" stroke-linecap="round" stroke-width="20"/>
+</svg>

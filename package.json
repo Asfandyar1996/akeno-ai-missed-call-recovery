@@ -1,0 +1,48 @@
+{
+  "name": "akeno",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "NEXT_DIST_DIR=.next-dev next dev -p 3005",
+    "build": "NEXT_DIST_DIR=.next next build",
+    "start": "NEXT_DIST_DIR=.next next start -H 127.0.0.1 -p 3005",
+    "postinstall": "prisma generate",
+    "vercel-build": "prisma migrate deploy && NEXT_DIST_DIR=.next next build",
+    "lint": "eslint .",
+    "test:e2e": "playwright test",
+    "seed": "prisma db seed",
+    "db:migrate": "prisma migrate deploy"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^3.10.0",
+    "@prisma/client": "^6.19.3",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "dotenv": "^17.4.2",
+    "lucide-react": "^0.468.0",
+    "next": "^15.1.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-hook-form": "^7.54.2",
+    "recharts": "^2.15.0",
+    "tailwind-merge": "^2.6.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.61.1",
+    "@types/node": "^22.10.5",
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^9.17.0",
+    "eslint-config-next": "^15.1.0",
+    "postcss": "^8.4.49",
+    "prisma": "^6.19.3",
+    "tailwindcss": "^3.4.17",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "devDependenciesMeta": {},
+  "overrides": {},
+  "packageManager": "npm@10.8.2"
+}

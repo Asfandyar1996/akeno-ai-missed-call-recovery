@@ -1,0 +1,120 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Client {
+  id                 String              @id @default(cuid())
+  companyName        String
+  ownerName          String
+  email              String
+  phone              String
+  website            String?
+  logoDataUrl        String?
+  address            String?
+  city               String?
+  state              String?
+  zip                String?
+  timeZone           String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  onboardingProfiles OnboardingProfile[]
+  leads              Lead[]
+  activityLogs       ActivityLog[]
+}
+
+model OnboardingProfile {
+  id                         String   @id @default(cuid())
+  clientId                   String   @unique
+  client                     Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  step                       Int      @default(1)
+  status                     String   @default("draft")
+  servicesJson               String
+  serviceAreaJson            String
+  phoneConfigJson            String
+  agentConfigJson            String
+  leadDestinationJson        String
+  notificationPreferenceJson String
+  complianceJson             String
+  mockClientId               String?
+  workflowStatus             String?
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+}
+
+model ServiceArea {
+  id        String   @id @default(cuid())
+  clientId  String
+  type      String
+  value     String
+  createdAt DateTime @default(now())
+}
+
+model Integration {
+  id          String   @id @default(cuid())
+  clientId    String
+  provider    String
+  status      String   @default("not_connected")
+  configJson  String
+  lastTestAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model NotificationPreference {
+  id          String   @id @default(cuid())
+  clientId    String
+  email       String
+  ownerSms    String?
+  dispatcherSms String?
+  sendFor     String
+  dailySummary Boolean @default(true)
+  weeklyReport Boolean @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Lead {
+  id                  String   @id @default(cuid())
+  clientId            String
+  client              Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  customerName        String
+  phone               String
+  propertyAddress     String
+  zip                 String
+  city                String
+  state               String
+  serviceRequested    String
+  urgency             String
+  status              String
+  assignedPerson      String
+  activeLeak          Boolean  @default(false)
+  propertyType        String
+  roofType            String?
+  roofAge             String?
+  stormDamage         Boolean  @default(false)
+  insuranceStatus     String?
+  preferredAppointment String?
+  photosJson          String
+  conversationJson    String
+  notificationsJson   String
+  crmSyncStatus       String
+  leadSummary         String
+  estimatedValue      Int      @default(0)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  clientId  String
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  type      String
+  message   String
+  metadataJson String
+  createdAt DateTime @default(now())
+}
