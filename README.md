@@ -12,17 +12,30 @@ The core product boundary is intentionally human-in-the-loop: the AI can collect
 
 ## Web App Screenshots
 
-![Akeno homepage desktop](qa-screenshots/senior-qa-home-desktop-viewport.png)
+<p>
+  <strong>Homepage</strong><br />
+  <img src="qa-screenshots/senior-qa-home-desktop-viewport.png" alt="Akeno homepage desktop" width="760" />
+</p>
 
-![Akeno operations dashboard](qa-screenshots/senior-qa-dashboard-desktop-viewport.png)
+<p>
+  <strong>Operations dashboard</strong><br />
+  <img src="qa-screenshots/senior-qa-dashboard-desktop-viewport.png" alt="Akeno operations dashboard" width="760" />
+</p>
 
-![Akeno lead operations](qa-screenshots/final-leads.png)
+<p>
+  <strong>Lead operations</strong><br />
+  <img src="qa-screenshots/final-leads.png" alt="Akeno lead operations" width="760" />
+</p>
 
-![Akeno integrations dashboard](qa-screenshots/senior-qa-integrations-desktop-viewport.png)
+<p>
+  <strong>Integrations dashboard</strong><br />
+  <img src="qa-screenshots/senior-qa-integrations-desktop-viewport.png" alt="Akeno integrations dashboard" width="760" />
+</p>
 
-![Akeno onboarding workflow](qa-screenshots/senior-qa-onboarding-desktop-viewport.png)
-
-![Akeno demo story](qa-screenshots/senior-qa-demo-chat-desktop.png)
+<p>
+  <strong>Onboarding workflow</strong><br />
+  <img src="qa-screenshots/senior-qa-onboarding-desktop-viewport.png" alt="Akeno onboarding workflow" width="760" />
+</p>
 
 ## Engineering Scope
 
