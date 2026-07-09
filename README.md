@@ -1,55 +1,60 @@
 # Akeno
 
-Production-style AI missed-call recovery platform prototype for roofing and home-service businesses.
+AI missed-call recovery platform for roofing and home-service businesses.
 
-Akeno turns missed roofing calls into structured leads through instant SMS follow-up, roofing-specific AI intake, urgent leak and storm-damage routing, owner alerts, and CRM or Google Sheets handoff. The project is built as a deployable full-stack SaaS-style demo with a polished frontend, onboarding wizard, client dashboard, lead operations views, integration setup screens, privacy/contact pages, and an n8n-oriented automation architecture.
+Akeno is a production-style SaaS prototype that shows how missed inbound calls can be converted into qualified leads through instant SMS follow-up, roofing-specific AI intake, urgent lead routing, owner alerts, and CRM or Google Sheets handoff. The project combines a polished client-facing web app with an n8n/Twilio/OpenAI workflow architecture.
 
-## Demo
+## Product Context
 
-- Local app: `http://localhost:3005`
-- Key routes:
-  - `/` - marketing site
-  - `/onboarding?start=1` - client setup wizard
-  - `/dashboard` - recovery operations dashboard
-  - `/dashboard/leads` - lead operations table
-  - `/demo-chat` - animated missed-call recovery story
-  - `/privacy` - privacy policy
-  - `/contact` - Akeno Builds contact page
-  - `/styleguide` - frontend styleguide
+Roofing companies often lose high-intent leads when office lines are busy, calls arrive after hours, or urgent storm/leak calls go to voicemail. Akeno models a recovery system that responds immediately, gathers structured job details, flags urgent water-intrusion scenarios, and prepares the lead for human review.
 
-## Screenshots
+The core product boundary is intentionally human-in-the-loop: the AI can collect details and recommend next steps, but a roofing team confirms appointments, pricing, insurance claims, and safety-sensitive decisions.
 
-![Homepage mobile](qa-screenshots/senior-qa-home-mobile-viewport.png)
+## Web App Screenshots
 
-![Dashboard desktop](qa-screenshots/senior-qa-dashboard-desktop-viewport.png)
+![Akeno homepage mobile](qa-screenshots/senior-qa-home-mobile-viewport.png)
 
-![Dashboard mobile menu](qa-screenshots/senior-qa-dashboard-mobile-menu.png)
+![Akeno operations dashboard](qa-screenshots/senior-qa-dashboard-desktop-viewport.png)
 
-![Onboarding](qa-screenshots/senior-qa-onboarding-recheck-fixed.png)
+![Akeno mobile dashboard navigation](qa-screenshots/senior-qa-dashboard-mobile-menu.png)
 
-## What It Shows
+![Akeno onboarding workflow](qa-screenshots/senior-qa-onboarding-recheck-fixed.png)
 
-- Responsive frontend across marketing, onboarding, dashboard, legal, and support pages
-- Product-grade navigation with desktop and mobile drawer behavior
-- Lead operations table with search, status filters, urgency filters, sorting, empty state, and CSV export
-- Lead detail drawer with conversation history, urgency handling, recommended next action, and human-confirmation boundary
-- Onboarding wizard with step validation, draft save state, review summaries, and generated AI setup rules
-- Privacy/contact pages with real Akeno Builds domain emails
-- Styleguide page documenting UI foundations, badges, cards, forms, and accessibility notes
-- n8n/Twilio/OpenAI/CRM workflow architecture for missed-call automation
+## Engineering Scope
 
-## Architecture
+- Responsive Next.js application with marketing, onboarding, dashboard, lead operations, integrations, privacy, contact, demo, and styleguide routes
+- Client onboarding wizard with step validation, draft state, review summary, generated AI rules, and clean local sandbox behavior
+- Lead operations table with search, status filters, urgency filters, sorting, empty state handling, and CSV export
+- Lead detail drawer with conversation history, photo placeholders, urgency notes, recommended next action, and human confirmation boundary
+- Dashboard views for recovered leads, reply rate, urgent lead volume, estimated recovered value, recent activity, and setup status
+- Mobile navigation patterns for both public pages and authenticated-style dashboard views
+- Akeno branding, favicon assets, responsive UI system, focus states, skip link, and reduced-motion support
+- Playwright smoke tests covering public routes, onboarding, dashboard, leads, and mobile drawers
+
+## System Design
 
 ```text
-Homeowner missed call
+Missed roofing call
   -> Twilio-style webhook
   -> n8n workflow
-  -> OpenAI roofing intake guardrails
-  -> lead record and conversation summary
-  -> urgent owner alert
+  -> Roofing-only AI intake
+  -> Lead record and conversation summary
+  -> Urgent owner alert when needed
   -> CRM or Google Sheets handoff
-  -> dashboard review and human confirmation
+  -> Dashboard review and human confirmation
 ```
+
+## AI Workflow Design
+
+The AI intake layer is designed around narrow, practical guardrails:
+
+- Discuss accepted roofing work only
+- Treat active leaks, water intrusion, storm damage, and tarp requests as urgent
+- Ask for issue type, active water entry, property address, property type, roof age if known, insurance context, photos if available, and preferred appointment window
+- Avoid structural safety diagnosis
+- Avoid final price quotes
+- Avoid promising insurance outcomes
+- Capture appointment intent without automatically confirming service commitments
 
 ## Tech Stack
 
@@ -57,81 +62,44 @@ Homeowner missed call
 - React and TypeScript
 - Tailwind CSS
 - Prisma ORM
-- Neon/Postgres-ready schema
+- Postgres-ready schema for Neon or similar hosted databases
 - Vercel deployment configuration
-- n8n-oriented backend workflow design
-- Twilio-style SMS/call routing
-- OpenAI-style AI agent instructions
+- Playwright end-to-end smoke tests
+- n8n-oriented automation architecture
+- Twilio-style SMS/call routing model
+- OpenAI-style agent instructions
 - Google Sheets/CRM handoff model
 
-## AI Guardrails
+## Quality Signals
 
-The product is designed around a practical human-in-the-loop boundary:
+- Public repository excludes secrets, local databases, generated builds, Vercel metadata, and dependency folders
+- Local sandbox mode provides demo data when no Postgres database is configured
+- ESLint and production build scripts are configured
+- Browser smoke tests cover the main portfolio/demo surfaces
+- README screenshots come from the actual web app
 
-- Discuss roofing services only
-- Treat active leaks, water intrusion, storm damage, and tarp requests as urgent
-- Do not diagnose structural safety
-- Do not quote final prices
-- Do not promise insurance outcomes
-- Capture preferred appointment windows, but require a human to confirm scheduling and service commitments
-
-## Run Locally
+## Technical Notes
 
 ```bash
 npm install
 npm run dev
-```
-
-Open `http://localhost:3005`.
-
-For production-like database work, use a Postgres `DATABASE_URL`. If `DATABASE_URL` is missing or not a Postgres URL, the app intentionally runs in local sandbox mode with demo leads, dashboard stats, onboarding defaults, and sandbox save/test responses.
-
-## Useful Commands
-
-```bash
-npm run build
 npm run lint
+npm run build
 npm run test:e2e
-npm run db:migrate
-npm run seed
-npx prisma studio
 ```
 
-## Deploy To Vercel
+The app runs locally on `http://localhost:3005`. Production-style persistence expects a Postgres `DATABASE_URL`; without one, the app intentionally uses sandbox data for portfolio/demo review.
 
-This app needs a persistent Postgres database in production. Do not deploy it with local SQLite.
+## Production Hardening
 
-1. Create a Postgres database with Neon, Vercel Postgres, Supabase, Render, or Railway.
-2. Add environment variables:
+This is a portfolio-grade prototype rather than a fully hardened multi-tenant SaaS. Before live client traffic, the next engineering steps would be:
 
-```bash
-DATABASE_URL=""
-AKENO_ACCESS_USERNAME=""
-AKENO_ACCESS_PASSWORD=""
-```
-
-3. Deploy with Vercel.
-
-Vercel uses `npm run vercel-build`, which runs Prisma migrations before building.
-
-## Portfolio Positioning
-
-Use this project as:
-
-```text
-A deployed production-style prototype of an AI missed-call recovery platform for roofing businesses, including responsive frontend, onboarding, dashboard, lead operations, AI guardrails, n8n/Twilio/OpenAI workflow design, and CRM/Google Sheets handoff.
-```
-
-## Production Hardening Still Needed
-
-This is a strong portfolio/demo project, not a fully hardened production SaaS yet. Before live client traffic, add:
-
-- Real authentication and role-based access
+- Real authentication and role-based access control
 - Tenant isolation for multiple companies
 - Twilio webhook signature validation
 - Rate limiting on public API routes
 - Production OpenAI logging and PII redaction
 - Retry queues for SMS, CRM, and webhook failures
-- Sentry or equivalent error monitoring
-- Full consent and opt-out compliance workflow
-- API and end-to-end test coverage in CI
+- Monitoring and error reporting
+- Consent, opt-out, and messaging compliance workflows
+- CI for lint, build, and end-to-end tests
