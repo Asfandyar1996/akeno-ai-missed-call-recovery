@@ -183,6 +183,14 @@ body {
   animation: typingBounce 0.9s ease-in-out infinite;
 }
 
+.demo-step-transition {
+  animation: demoStepTransition 360ms ease-out both;
+}
+
+.crm-board-enter {
+  animation: crmBoardEnter 460ms ease-out both;
+}
+
 .next-action-pulse {
   position: relative;
   isolation: isolate;
@@ -209,6 +217,28 @@ body {
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes demoStepTransition {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes crmBoardEnter {
+  from {
+    opacity: 0;
+    transform: translateX(16px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
   }
 }
 

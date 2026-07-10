@@ -29,7 +29,7 @@ import { cn } from "@/lib/utils";
 type ScenarioId = "active-leak" | "storm-damage" | "replacement" | "inspection";
 type Stage = 0 | 1 | 2 | 3 | 4 | 5;
 type Message = { from: "homeowner" | "akeno"; text: string; label?: string };
-type QuickReply = { text: string; response: string };
+type QuickReply = { label: string; text: string; response: string };
 type LeadState = {
   customer: string;
   phone: string;
@@ -74,18 +74,22 @@ const scenarios: Record<
     description: "Water is entering the home now. This should become an urgent lead.",
     quickReplies: [
       {
+        label: "Leak + address + tonight",
         text: "Yes, water is actively coming in. 1842 Cedar Grove Dr, Dallas. Tonight after 8 works.",
         response: "I marked this urgent and captured your address and preferred window. The roofing team will confirm before dispatch."
       },
       {
+        label: "Photos available",
         text: "I can send photos of the ceiling and roof. Water is still coming in at 1842 Cedar Grove Dr.",
         response: "Please send the photos here. I flagged active water intrusion and attached the address for urgent review."
       },
       {
+        label: "Roof age + leak location",
         text: "Residential shingle roof, about 12 years old. Kitchen ceiling is leaking at 1842 Cedar Grove Dr.",
         response: "Got it. I captured roof type, age, leak location, and address, then routed this as urgent."
       },
       {
+        label: "Insurance possible",
         text: "I may file insurance, but I need someone to stop the leak first. 1842 Cedar Grove Dr, Dallas.",
         response: "Understood. I noted possible insurance context, but the urgent action is stopping water entry first."
       }
@@ -110,18 +114,22 @@ const scenarios: Record<
     description: "A hail/wind lead needs qualification, photos, and insurance context.",
     quickReplies: [
       {
+        label: "Address + no leak",
         text: "Address is 9308 Lake Hollow Ct, Plano. Residential. No active leak.",
         response: "Thanks. I captured storm damage with no active leak, so this goes to elevated inspection follow-up."
       },
       {
+        label: "Photos of damage",
         text: "I have photos of shingles in the yard at 9308 Lake Hollow Ct. No water is coming inside.",
         response: "Please send the photos here. I marked this as storm damage without active water intrusion."
       },
       {
+        label: "Insurance not opened",
         text: "Insurance has not been opened yet. Tomorrow afternoon is best for 9308 Lake Hollow Ct.",
         response: "I captured the insurance status and preferred timing. The team will confirm an inspection slot."
       },
       {
+        label: "Hail + loose shingles",
         text: "The roof is about 9 years old. Hail hit the area and I see loose shingles.",
         response: "Got it. I noted roof age, hail context, and loose shingles for storm-damage triage."
       }
@@ -146,18 +154,22 @@ const scenarios: Record<
     description: "A non-urgent high-value quote request should still be captured cleanly.",
     quickReplies: [
       {
+        label: "Old roof + address",
         text: "It is a residential roof at 411 Sycamore Bend in Frisco, about 22 years old.",
         response: "Thanks. I captured this as a replacement estimate and noted the roof age and address."
       },
       {
+        label: "Inspection report",
         text: "No leak, but the inspection report says it is near end of life. Address is 411 Sycamore Bend.",
         response: "Understood. I marked this as a routine replacement quote and noted the inspection-report context."
       },
       {
+        label: "Morning estimate",
         text: "Weekday mornings work best for an estimate at 411 Sycamore Bend.",
         response: "Got it. I captured the preferred appointment window and routed this to sales scheduling."
       },
       {
+        label: "Selling home soon",
         text: "I need a roof replacement quote before listing the property for sale.",
         response: "I captured the sales timeline and quote request. The team will confirm an estimate window."
       }
@@ -182,18 +194,22 @@ const scenarios: Record<
     description: "A normal inspection request should be routed without emergency escalation.",
     quickReplies: [
       {
+        label: "No leak + address",
         text: "No active leak. Address is 7620 Ridge Creek Ln, Fort Worth.",
         response: "Thanks. I captured this as a routine inspection with no active leak."
       },
       {
+        label: "Roof age unknown",
         text: "It is residential, roof age unknown. I need an inspection at 7620 Ridge Creek Ln.",
         response: "Got it. I noted property type, unknown roof age, and inspection address."
       },
       {
+        label: "Tuesday or Wednesday",
         text: "Tuesday or Wednesday works for a condition report and repair recommendations.",
         response: "I captured the preferred timing and inspection goal. The office will confirm a slot."
       },
       {
+        label: "Condition report",
         text: "I only need a condition report and repair recommendations. There is no emergency.",
         response: "Understood. I marked this as routine and kept it out of the urgent dispatch path."
       }
@@ -223,6 +239,13 @@ const checklist = [
   { stage: 5, key: "review", label: "Human confirms", detail: "The roofing team owns final dispatch." }
 ];
 
+const storySteps = [
+  { label: "Missed call", detail: "Akeno replies fast." },
+  { label: "Homeowner texts back", detail: "The lead context is captured." },
+  { label: "Lead is prepared", detail: "The team gets the important details." },
+  { label: "CRM is updated", detail: "The job is ready for follow-up." }
+];
+
 const starterMessage =
   "Hi, this is Akeno for RidgeLine Roofing. Sorry we missed your call. Are you dealing with a leak, storm damage, repair, replacement, or an inspection?";
 
@@ -237,7 +260,6 @@ export function MissedCallSimulator() {
 
   const scenario = scenarios[scenarioId];
   const progress = Math.round((stage / (checklist.length - 1)) * 100);
-  const completeKeys = checklist.slice(0, stage).map((item) => item.key);
 
   const leadRows = useMemo(
     () => [
@@ -336,7 +358,6 @@ export function MissedCallSimulator() {
 
           <section className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[310px_1fr]">
             <ChecklistPanel
-              completeKeys={completeKeys}
               ownerAlerted={ownerAlerted}
               progress={progress}
               scenarioTitle={scenario.title}
@@ -345,35 +366,37 @@ export function MissedCallSimulator() {
             />
 
             <section className="h-full min-h-0 overflow-hidden rounded-lg border border-white/12 bg-white/8 p-3 shadow-2xl backdrop-blur">
-              {stage === 0 ? (
-                <ScenarioStep scenarioId={scenarioId} onChoose={chooseScenario} onTrigger={triggerMissedCall} />
-              ) : null}
+              <div key={stage} className="demo-step-transition h-full">
+                {stage === 0 ? (
+                  <ScenarioStep scenarioId={scenarioId} onChoose={chooseScenario} onTrigger={triggerMissedCall} />
+                ) : null}
 
-              {stage === 1 ? (
-                <MissedCallStep messages={messages} />
-              ) : null}
+                {stage === 1 ? (
+                  <MissedCallStep messages={messages} />
+                ) : null}
 
-              {stage === 2 ? (
-                <ReplyStep
-                  input={input}
-                  messages={messages}
-                  onInput={setInput}
-                  onSend={sendMessage}
-                  scenario={scenario}
-                />
-              ) : null}
+                {stage === 2 ? (
+                  <ReplyStep
+                    input={input}
+                    messages={messages}
+                    onInput={setInput}
+                    onSend={sendMessage}
+                    scenario={scenario}
+                  />
+                ) : null}
 
-              {stage === 3 ? (
-                <ProcessingStep messages={messages} typing={typing} />
-              ) : null}
+                {stage === 3 ? (
+                  <ProcessingStep messages={messages} typing={typing} />
+                ) : null}
 
-              {stage === 4 ? (
-                <LeadPacketStep lead={lead} leadRows={leadRows} messages={messages} onReview={markHumanReview} />
-              ) : null}
+                {stage === 4 ? (
+                  <LeadPacketStep lead={lead} leadRows={leadRows} messages={messages} onReview={markHumanReview} />
+                ) : null}
 
-              {stage === 5 ? (
-                <ReviewStep lead={lead} leadRows={leadRows} messages={messages} ownerAlerted={ownerAlerted} onReset={resetDemo} />
-              ) : null}
+                {stage === 5 ? (
+                  <ReviewStep lead={lead} ownerAlerted={ownerAlerted} onReset={resetDemo} />
+                ) : null}
+              </div>
             </section>
           </section>
         </div>
@@ -383,42 +406,42 @@ export function MissedCallSimulator() {
 }
 
 function ChecklistPanel({
-  completeKeys,
   onReset,
   ownerAlerted,
   progress,
   scenarioTitle,
   stage
 }: {
-  completeKeys: string[];
   onReset: () => void;
   ownerAlerted: boolean;
   progress: number;
   scenarioTitle: string;
   stage: Stage;
 }) {
+  const activeStoryStep = stage === 0 ? 0 : stage <= 2 ? 1 : stage <= 4 ? 2 : 3;
+
   return (
     <aside className="min-h-0 overflow-hidden rounded-lg border border-white/12 bg-white/8 p-2.5 shadow-2xl backdrop-blur">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-sm font-semibold text-cyan-100">Demo checklist</p>
-          <h2 className="mt-1 text-lg font-bold">Step-by-step</h2>
+          <p className="text-sm font-semibold text-cyan-100">Simple story</p>
+          <h2 className="mt-1 text-lg font-bold">What the roofer sees</h2>
         </div>
         <Badge className="bg-cyan-300/15 text-cyan-100">{progress}%</Badge>
       </div>
       <Progress value={progress} className="mt-2 bg-white/10" />
 
       <div className="mt-2 rounded-lg border border-white/10 bg-white/7 p-2.5">
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Selected scenario</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Demo situation</p>
         <p className="mt-1 font-semibold text-white">{scenarioTitle}</p>
       </div>
 
-      <div className="mt-2 space-y-1">
-        {checklist.map((item, index) => {
-          const done = completeKeys.includes(item.key);
-          const active = stage === item.stage;
+      <div className="mt-3 space-y-2">
+        {storySteps.map((item, index) => {
+          const done = index < activeStoryStep;
+          const active = index === activeStoryStep;
           return (
-            <div key={item.key} className="flex gap-3">
+            <div key={item.label} className="flex gap-3">
               <div className="flex flex-col items-center">
                 <span
                   className={cn(
@@ -432,11 +455,11 @@ function ChecklistPanel({
                 >
                   {done ? <CheckCircle2 className="h-4 w-4" /> : index + 1}
                 </span>
-                {index < checklist.length - 1 ? <span className={cn("h-3 w-px", done ? "bg-emerald-300/70" : "bg-white/12")} /> : null}
+                {index < storySteps.length - 1 ? <span className={cn("h-4 w-px", done ? "bg-emerald-300/70" : "bg-white/12")} /> : null}
               </div>
               <div className="pt-0.5">
                 <p className={cn("text-sm font-semibold", done ? "text-white" : active ? "text-cyan-100" : "text-white/54")}>{item.label}</p>
-                <p className="mt-0.5 text-[11px] leading-3.5 text-slate-400">{item.detail}</p>
+                <p className="mt-0.5 text-xs leading-4 text-slate-400">{item.detail}</p>
               </div>
             </div>
           );
@@ -446,10 +469,10 @@ function ChecklistPanel({
       <div className={cn("mt-2 rounded-lg border p-2.5", ownerAlerted ? "border-orange-300/40 bg-orange-500/14" : "border-white/10 bg-white/7")}>
         <div className="flex items-center gap-2 text-sm font-semibold">
           {ownerAlerted ? <AlertTriangle className="h-4 w-4 text-orange-300" /> : <ShieldCheck className="h-4 w-4 text-cyan-200" />}
-          {ownerAlerted ? "Owner alert queued" : "No escalation yet"}
+          {ownerAlerted ? "Urgent lead detected" : "Waiting for lead details"}
         </div>
         <p className="mt-1 text-[11px] leading-3.5 text-slate-300">
-          {ownerAlerted ? "Urgent or elevated leads are routed before they go cold." : "Routine leads stay in normal dispatch."}
+          {ownerAlerted ? "The roofing team gets this before the customer moves on." : "Akeno will route the lead after the reply."}
         </p>
       </div>
 
@@ -580,6 +603,7 @@ function ReplyStep({
               <button
                 key={reply.text}
                 type="button"
+                aria-label={reply.text}
                 onClick={() => onInput(reply.text)}
                 className="rounded-full border border-white/14 bg-white/8 px-3 py-1.5 text-xs font-semibold text-slate-100 hover:bg-white/12"
               >
@@ -667,14 +691,10 @@ function LeadPacketStep({
 
 function ReviewStep({
   lead,
-  leadRows,
-  messages,
   onReset,
   ownerAlerted
 }: {
   lead: LeadState;
-  leadRows: string[][];
-  messages: Message[];
   onReset: () => void;
   ownerAlerted: boolean;
 }) {
@@ -710,10 +730,76 @@ function ReviewStep({
           </div>
         </div>
       </div>
-      <div className="mt-3 grid gap-3 xl:grid-cols-[0.9fr_1fr]">
-        <PhoneThread messages={messages} typing={false} />
-        <LeadCard lead={lead} leadRows={leadRows} reviewed />
+      <div className="mt-3">
+        <CrmBoard lead={lead} ownerAlerted={ownerAlerted} />
       </div>
+    </div>
+  );
+}
+
+function CrmBoard({ lead, ownerAlerted }: { lead: LeadState; ownerAlerted: boolean }) {
+  const timeline = [
+    "Missed call recovered",
+    "SMS conversation saved",
+    "Lead record created",
+    ownerAlerted ? "Owner alert sent" : "Office follow-up queued"
+  ];
+
+  return (
+    <div className="crm-board-enter rounded-lg border border-white/12 bg-[#f8fafc] p-3 text-slate-950 shadow-2xl">
+      <div className="flex items-start justify-between gap-3 border-b border-slate-200 pb-3">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wide text-cyan-700">Akeno CRM</p>
+          <h3 className="mt-1 text-2xl font-bold tracking-normal">New roofing lead</h3>
+        </div>
+        <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800">Updated now</span>
+      </div>
+
+      <div className="mt-3 grid gap-3 lg:grid-cols-[1fr_0.85fr]">
+        <div className="rounded-lg border border-slate-200 bg-white p-3">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Customer</p>
+              <p className="mt-1 text-xl font-bold">{lead.customer}</p>
+              <p className="mt-0.5 text-sm font-semibold text-slate-500">{lead.phone}</p>
+            </div>
+            <UrgencyBadge urgency={lead.urgency} />
+          </div>
+
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            <CrmField label="Job" value={lead.issue} />
+            <CrmField label="Appointment" value={lead.appointment} />
+            <CrmField label="Address" value={lead.address} />
+            <CrmField label="Assigned to" value={ownerAlerted ? "Emergency dispatcher" : "Office scheduler"} />
+          </div>
+
+        </div>
+
+        <div className="rounded-lg border border-slate-200 bg-white p-3">
+          <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Handoff status</p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            {timeline.map((item) => (
+              <div key={item} className="flex items-center gap-2 rounded-md bg-slate-50 px-3 py-2">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                <span className="text-sm font-semibold text-slate-800">{item}</span>
+              </div>
+            ))}
+          </div>
+          <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 p-2.5">
+            <p className="text-sm font-bold text-emerald-900">Lead sent to the right person</p>
+            <p className="mt-1 text-sm leading-5 text-emerald-800">The roofer sees the customer, problem, urgency, and next action.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CrmField({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
+      <p className="text-xs font-bold uppercase tracking-wide text-slate-500">{label}</p>
+      <p className="mt-1 text-sm font-semibold leading-5 text-slate-900">{value}</p>
     </div>
   );
 }
