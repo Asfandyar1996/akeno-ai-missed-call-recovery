@@ -265,67 +265,72 @@ export function MissedCallSimulator() {
   const resetDemo = () => chooseScenario(scenarioId);
 
   return (
-    <main id="main-content" className="min-h-screen bg-[#07111f] text-white">
+    <main id="main-content" className="flex h-screen flex-col overflow-hidden bg-[#07111f] text-white">
       <LandingHeader />
 
-      <section className="demo-simulator-grid border-b border-white/10">
-        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-          <div className="max-w-4xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-300/25 bg-cyan-300/10 px-3 py-1 text-sm font-semibold text-cyan-100">
-              <Sparkles className="h-4 w-4" />
-              Guided simulator
+      <div className="demo-simulator-grid min-h-0 flex-1 overflow-hidden">
+        <div className="mx-auto flex h-full max-w-7xl flex-col gap-2 px-4 py-2 sm:px-6 lg:px-8">
+          <section className="shrink-0 rounded-lg border border-white/10 bg-white/7 p-2.5 shadow-2xl backdrop-blur lg:flex lg:items-center lg:justify-between lg:gap-6">
+            <div className="min-w-0">
+              <div className="inline-flex items-center gap-2 rounded-full border border-cyan-300/25 bg-cyan-300/10 px-3 py-1 text-xs font-semibold text-cyan-100">
+                <Sparkles className="h-3.5 w-3.5" />
+                Guided simulator
+              </div>
+              <h1 className="mt-1.5 text-2xl font-bold tracking-normal text-white sm:text-3xl">Missed Call Recovery Simulator</h1>
+              <p className="mt-1.5 max-w-3xl text-sm leading-5 text-slate-300">
+                Choose a roofing scenario, trigger the missed call, send the homeowner reply, then watch Akeno build the lead packet.
+              </p>
             </div>
-            <h1 className="mt-5 text-4xl font-bold tracking-normal text-white sm:text-6xl">Missed Call Recovery Simulator</h1>
-            <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-300">
-              Follow one clear sequence: choose a roofing scenario, trigger the missed call, send the homeowner reply,
-              then watch Akeno build the lead packet and hand it to a human reviewer.
-            </p>
-          </div>
-        </div>
-      </section>
+            <div className="mt-2 flex shrink-0 flex-wrap gap-2 lg:mt-0">
+              <Badge className="bg-cyan-300/15 text-cyan-100">Everything stays on screen</Badge>
+              <Badge className="bg-white/10 text-white">Step {stage + 1} of 6</Badge>
+            </div>
+          </section>
 
-      <section className="mx-auto grid max-w-7xl gap-5 px-4 py-6 sm:px-6 lg:grid-cols-[360px_1fr] lg:px-8">
-        <ChecklistPanel
-          completeKeys={completeKeys}
-          ownerAlerted={ownerAlerted}
-          progress={progress}
-          scenarioTitle={scenario.title}
-          stage={stage}
-          onReset={resetDemo}
-        />
-
-        <section className="min-h-[680px] rounded-lg border border-white/12 bg-white/8 p-4 shadow-2xl backdrop-blur sm:p-5">
-          {stage === 0 ? (
-            <ScenarioStep scenarioId={scenarioId} onChoose={chooseScenario} onTrigger={triggerMissedCall} />
-          ) : null}
-
-          {stage === 1 ? (
-            <MissedCallStep messages={messages} />
-          ) : null}
-
-          {stage === 2 ? (
-            <ReplyStep
-              input={input}
-              messages={messages}
-              onInput={setInput}
-              onSend={sendMessage}
-              scenario={scenario}
+          <section className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[310px_1fr]">
+            <ChecklistPanel
+              completeKeys={completeKeys}
+              ownerAlerted={ownerAlerted}
+              progress={progress}
+              scenarioTitle={scenario.title}
+              stage={stage}
+              onReset={resetDemo}
             />
-          ) : null}
 
-          {stage === 3 ? (
-            <ProcessingStep messages={messages} typing={typing} />
-          ) : null}
+            <section className="h-full min-h-0 overflow-hidden rounded-lg border border-white/12 bg-white/8 p-3 shadow-2xl backdrop-blur">
+              {stage === 0 ? (
+                <ScenarioStep scenarioId={scenarioId} onChoose={chooseScenario} onTrigger={triggerMissedCall} />
+              ) : null}
 
-          {stage === 4 ? (
-            <LeadPacketStep lead={lead} leadRows={leadRows} messages={messages} ownerAlerted={ownerAlerted} onReview={markHumanReview} />
-          ) : null}
+              {stage === 1 ? (
+                <MissedCallStep messages={messages} />
+              ) : null}
 
-          {stage === 5 ? (
-            <ReviewStep lead={lead} leadRows={leadRows} messages={messages} ownerAlerted={ownerAlerted} onReset={resetDemo} />
-          ) : null}
-        </section>
-      </section>
+              {stage === 2 ? (
+                <ReplyStep
+                  input={input}
+                  messages={messages}
+                  onInput={setInput}
+                  onSend={sendMessage}
+                  scenario={scenario}
+                />
+              ) : null}
+
+              {stage === 3 ? (
+                <ProcessingStep messages={messages} typing={typing} />
+              ) : null}
+
+              {stage === 4 ? (
+                <LeadPacketStep lead={lead} leadRows={leadRows} messages={messages} ownerAlerted={ownerAlerted} onReview={markHumanReview} />
+              ) : null}
+
+              {stage === 5 ? (
+                <ReviewStep lead={lead} leadRows={leadRows} messages={messages} ownerAlerted={ownerAlerted} onReset={resetDemo} />
+              ) : null}
+            </section>
+          </section>
+        </div>
+      </div>
     </main>
   );
 }
@@ -346,22 +351,22 @@ function ChecklistPanel({
   stage: Stage;
 }) {
   return (
-    <aside className="h-fit rounded-lg border border-white/12 bg-white/8 p-4 shadow-2xl backdrop-blur lg:sticky lg:top-20">
+    <aside className="min-h-0 overflow-hidden rounded-lg border border-white/12 bg-white/8 p-3 shadow-2xl backdrop-blur">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-sm font-semibold text-cyan-100">Demo checklist</p>
-          <h2 className="mt-1 text-2xl font-bold">Step-by-step</h2>
+          <h2 className="mt-1 text-xl font-bold">Step-by-step</h2>
         </div>
         <Badge className="bg-cyan-300/15 text-cyan-100">{progress}%</Badge>
       </div>
-      <Progress value={progress} className="mt-4 bg-white/10" />
+      <Progress value={progress} className="mt-3 bg-white/10" />
 
-      <div className="mt-5 rounded-lg border border-white/10 bg-white/7 p-3">
+      <div className="mt-3 rounded-lg border border-white/10 bg-white/7 p-3">
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Selected scenario</p>
         <p className="mt-1 font-semibold text-white">{scenarioTitle}</p>
       </div>
 
-      <div className="mt-5 space-y-3">
+      <div className="mt-2 space-y-1.5">
         {checklist.map((item, index) => {
           const done = completeKeys.includes(item.key);
           const active = stage === item.stage;
@@ -380,28 +385,28 @@ function ChecklistPanel({
                 >
                   {done ? <CheckCircle2 className="h-4 w-4" /> : index + 1}
                 </span>
-                {index < checklist.length - 1 ? <span className={cn("h-8 w-px", done ? "bg-emerald-300/70" : "bg-white/12")} /> : null}
+                {index < checklist.length - 1 ? <span className={cn("h-4 w-px", done ? "bg-emerald-300/70" : "bg-white/12")} /> : null}
               </div>
               <div className="pt-1">
                 <p className={cn("text-sm font-semibold", done ? "text-white" : active ? "text-cyan-100" : "text-white/54")}>{item.label}</p>
-                <p className="mt-1 text-xs leading-5 text-slate-400">{item.detail}</p>
+                <p className="mt-0.5 text-xs leading-4 text-slate-400">{item.detail}</p>
               </div>
             </div>
           );
         })}
       </div>
 
-      <div className={cn("mt-5 rounded-lg border p-4", ownerAlerted ? "border-orange-300/40 bg-orange-500/14" : "border-white/10 bg-white/7")}>
+      <div className={cn("mt-3 rounded-lg border p-3", ownerAlerted ? "border-orange-300/40 bg-orange-500/14" : "border-white/10 bg-white/7")}>
         <div className="flex items-center gap-2 text-sm font-semibold">
           {ownerAlerted ? <AlertTriangle className="h-4 w-4 text-orange-300" /> : <ShieldCheck className="h-4 w-4 text-cyan-200" />}
           {ownerAlerted ? "Owner alert queued" : "No escalation yet"}
         </div>
-        <p className="mt-2 text-xs leading-5 text-slate-300">
+        <p className="mt-1 text-xs leading-4 text-slate-300">
           {ownerAlerted ? "Urgent or elevated leads are routed before they go cold." : "Routine leads stay in normal dispatch."}
         </p>
       </div>
 
-      <Button variant="outline" className="mt-4 w-full border-white/16 bg-white/8 text-white hover:bg-white/12" onClick={onReset}>
+      <Button variant="outline" className="mt-2 w-full border-white/16 bg-white/8 text-white hover:bg-white/12" onClick={onReset}>
         <RefreshCcw className="h-4 w-4" />
         Reset demo
       </Button>
@@ -427,7 +432,7 @@ function ScenarioStep({
         text="This controls what the homeowner says and how Akeno classifies urgency."
       />
 
-      <div className="mt-6 grid gap-3 md:grid-cols-2">
+      <div className="mt-4 grid gap-3 md:grid-cols-2">
         {(Object.entries(scenarios) as Array<[ScenarioId, (typeof scenarios)[ScenarioId]]>).map(([id, scenario]) => {
           const Icon = scenario.icon;
           const active = id === scenarioId;
@@ -437,7 +442,7 @@ function ScenarioStep({
               type="button"
               onClick={() => onChoose(id)}
               className={cn(
-                "rounded-lg border p-4 text-left transition",
+                "rounded-lg border p-3 text-left transition",
                 active ? "border-cyan-300/60 bg-cyan-300/14 shadow-lg shadow-cyan-950/20" : "border-white/12 bg-white/8 hover:border-white/30 hover:bg-white/12"
               )}
             >
@@ -447,7 +452,7 @@ function ScenarioStep({
                 </span>
                 <div>
                   <p className="font-semibold text-white">{scenario.title}</p>
-                  <p className="mt-1 text-sm leading-6 text-slate-300">{scenario.description}</p>
+                  <p className="mt-1 text-sm leading-5 text-slate-300">{scenario.description}</p>
                 </div>
               </div>
             </button>
@@ -455,13 +460,13 @@ function ScenarioStep({
         })}
       </div>
 
-      <div className="mt-6 rounded-lg border border-cyan-300/20 bg-cyan-300/10 p-5">
+      <div className="mt-3 rounded-lg border border-cyan-300/20 bg-cyan-300/10 p-3">
         <p className="text-sm font-semibold text-cyan-100">What happens next</p>
-        <p className="mt-2 text-sm leading-6 text-slate-300">
+        <p className="mt-1.5 text-sm leading-5 text-slate-300">
           Click the button below. The simulator will show the missed call, automatically send Akeno&apos;s recovery SMS,
           then move you to the homeowner reply step.
         </p>
-        <Button size="lg" className="mt-4 bg-cyan-400 text-slate-950 hover:bg-cyan-300" onClick={onTrigger}>
+        <Button size="lg" className="next-action-pulse mt-3 bg-cyan-400 text-slate-950 hover:bg-cyan-300" onClick={onTrigger}>
           <PhoneMissed className="h-4 w-4" />
           Trigger missed call
         </Button>
@@ -479,8 +484,8 @@ function MissedCallStep({ messages }: { messages: Message[] }) {
         title="Akeno detects the missed call"
         text="The roofing company missed the call, so Akeno immediately sends a recovery text. The next step appears automatically."
       />
-      <div className="mt-6 grid gap-4 lg:grid-cols-[0.8fr_1fr]">
-        <div className="rounded-lg border border-orange-300/30 bg-orange-500/12 p-5">
+      <div className="mt-3 grid gap-3 lg:grid-cols-[0.8fr_1fr]">
+        <div className="rounded-lg border border-orange-300/30 bg-orange-500/12 p-3">
           <div className="flex items-center gap-3">
             <span className="grid h-12 w-12 place-items-center rounded-full bg-orange-500 text-white">
               <PhoneMissed className="h-6 w-6" />
@@ -490,7 +495,7 @@ function MissedCallStep({ messages }: { messages: Message[] }) {
               <h3 className="text-2xl font-bold text-white">Missed call</h3>
             </div>
           </div>
-          <p className="mt-5 text-sm leading-6 text-orange-50/85">Akeno starts recovery before the homeowner calls another contractor.</p>
+          <p className="mt-3 text-sm leading-5 text-orange-50/85">Akeno starts recovery before the homeowner calls another contractor.</p>
         </div>
         <PhoneThread messages={messages} typing={false} />
       </div>
@@ -519,9 +524,9 @@ function ReplyStep({
         title="Send the homeowner reply"
         text="Use one suggested reply or type your own. After you send it, Akeno automatically qualifies the lead."
       />
-      <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_0.9fr]">
+      <div className="mt-3 grid gap-3 lg:grid-cols-[1fr_0.9fr]">
         <PhoneThread messages={messages} typing={false} />
-        <div className="rounded-lg border border-white/12 bg-white/8 p-4">
+        <div className="rounded-lg border border-white/12 bg-white/8 p-3">
           <p className="text-sm font-semibold text-cyan-100">Homeowner reply</p>
           <div className="mt-3 flex flex-wrap gap-2">
             {[scenario.firstReply, ...scenario.followUps].map((reply) => (
@@ -538,10 +543,10 @@ function ReplyStep({
           <Textarea
             value={input}
             onChange={(event) => onInput(event.target.value)}
-            className="mt-4 min-h-[120px] border-white/14 bg-white/95 text-slate-950"
+            className="mt-3 min-h-[78px] border-white/14 bg-white/95 text-slate-950"
             placeholder="Type as the homeowner..."
           />
-          <Button className="mt-3 w-full bg-cyan-400 text-slate-950 hover:bg-cyan-300" onClick={() => onSend()}>
+          <Button className="next-action-pulse mt-3 w-full bg-cyan-400 text-slate-950 hover:bg-cyan-300" onClick={() => onSend()}>
             <Send className="h-4 w-4" />
             Send
           </Button>
@@ -560,9 +565,9 @@ function ProcessingStep({ messages, typing }: { messages: Message[]; typing: boo
         title="Akeno qualifies the lead"
         text="The simulator is extracting urgency, address, job type, insurance context, and appointment intent."
       />
-      <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_0.85fr]">
+      <div className="mt-3 grid gap-3 lg:grid-cols-[1fr_0.85fr]">
         <PhoneThread messages={messages} typing={typing} />
-        <div className="rounded-lg border border-white/12 bg-white/8 p-5">
+        <div className="rounded-lg border border-white/12 bg-white/8 p-3">
           <div className="flex items-center gap-3">
             <span className="grid h-11 w-11 place-items-center rounded-md bg-cyan-300 text-slate-950">
               <Bot className="h-5 w-5" />
@@ -572,7 +577,7 @@ function ProcessingStep({ messages, typing }: { messages: Message[]; typing: boo
               <p className="mt-1 text-sm text-slate-300">Moving to lead packet automatically...</p>
             </div>
           </div>
-          <div className="mt-5 space-y-3">
+          <div className="mt-3 space-y-2">
             {["Classify issue", "Check urgency", "Extract address", "Prepare handoff"].map((label, index) => (
               <div key={label} className="flex items-center gap-3 rounded-md border border-white/10 bg-white/7 p-3">
                 <span className="grid h-7 w-7 place-items-center rounded-full bg-emerald-400 text-slate-950 text-xs font-bold">{index + 1}</span>
@@ -607,7 +612,7 @@ function LeadPacketStep({
         title="Lead packet is ready"
         text="The right data is now ready for a dispatcher, CRM, or Google Sheet handoff."
       />
-      <div className="mt-6 grid gap-4 xl:grid-cols-[0.9fr_1fr]">
+      <div className="mt-3 grid gap-3 xl:grid-cols-[0.9fr_1fr]">
         <PhoneThread messages={messages} typing={false} />
         <LeadCard lead={lead} leadRows={leadRows} ownerAlerted={ownerAlerted} onReview={onReview} />
       </div>
@@ -636,28 +641,26 @@ function ReviewStep({
         title="Human review completed"
         text="The AI has captured and prepared the lead. A human still confirms dispatch, pricing, insurance, and service commitments."
       />
-      <div className="mt-6 grid gap-4 xl:grid-cols-[0.9fr_1fr]">
-        <PhoneThread messages={messages} typing={false} />
-        <div className="space-y-4">
-          <LeadCard lead={lead} leadRows={leadRows} ownerAlerted={ownerAlerted} />
-          <div className="rounded-lg border border-emerald-300/30 bg-emerald-400/12 p-5">
-            <div className="flex items-center gap-3">
-              <span className="grid h-11 w-11 place-items-center rounded-full bg-emerald-400 text-slate-950">
-                <CheckCircle2 className="h-5 w-5" />
-              </span>
-              <div>
-                <p className="font-semibold text-white">Ready for roofing team follow-up</p>
-                <p className="mt-1 text-sm leading-6 text-slate-300">
-                  The lead is qualified, summarized, routed, and marked for human confirmation.
-                </p>
-              </div>
+      <div className="mt-3 rounded-lg border border-emerald-300/30 bg-emerald-400/12 p-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <span className="grid h-10 w-10 place-items-center rounded-full bg-emerald-400 text-slate-950">
+              <CheckCircle2 className="h-5 w-5" />
+            </span>
+            <div>
+              <p className="font-semibold text-white">Ready for roofing team follow-up</p>
+              <p className="mt-0.5 text-sm leading-5 text-slate-300">Qualified, summarized, routed, and marked for human confirmation.</p>
             </div>
-            <Button className="mt-4 bg-white text-slate-950 hover:bg-cyan-100" onClick={onReset}>
-              <RefreshCcw className="h-4 w-4" />
-              Run another scenario
-            </Button>
           </div>
+          <Button className="next-action-pulse bg-white text-slate-950 hover:bg-cyan-100" onClick={onReset}>
+            <RefreshCcw className="h-4 w-4" />
+            Run another scenario
+          </Button>
         </div>
+      </div>
+      <div className="mt-3 grid gap-3 xl:grid-cols-[0.9fr_1fr]">
+        <PhoneThread messages={messages} typing={false} />
+        <LeadCard lead={lead} leadRows={leadRows} ownerAlerted={ownerAlerted} />
       </div>
     </div>
   );
@@ -675,14 +678,14 @@ function StepHeader({
   title: string;
 }) {
   return (
-    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
       <div>
         <p className="text-sm font-semibold text-cyan-100">{eyebrow}</p>
-        <h2 className="mt-1 text-3xl font-bold tracking-normal text-white">{title}</h2>
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">{text}</p>
+        <h2 className="mt-1 text-2xl font-bold tracking-normal text-white">{title}</h2>
+        <p className="mt-2 max-w-2xl text-sm leading-5 text-slate-300">{text}</p>
       </div>
-      <span className="grid h-12 w-12 shrink-0 place-items-center rounded-lg bg-cyan-300 text-slate-950">
-        <Icon className="h-6 w-6" />
+      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-cyan-300 text-slate-950">
+        <Icon className="h-5 w-5" />
       </span>
     </div>
   );
@@ -690,20 +693,20 @@ function StepHeader({
 
 function PhoneThread({ messages, typing }: { messages: Message[]; typing: boolean }) {
   return (
-    <div className="rounded-lg border border-slate-800 bg-[#e9ded0] p-4 text-slate-950 shadow-2xl">
-      <div className="mb-4 flex items-center justify-between border-b border-slate-300 pb-3">
+    <div className="rounded-lg border border-slate-800 bg-[#e9ded0] p-2.5 text-slate-950 shadow-2xl">
+      <div className="mb-2 flex items-center justify-between border-b border-slate-300 pb-2">
         <div>
           <p className="text-sm font-bold">RidgeLine Roofing</p>
           <p className="text-xs text-slate-500">SMS recovery thread</p>
         </div>
         <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-800">Live</span>
       </div>
-      <div className="min-h-[360px] space-y-3">
+      <div className="h-[272px] space-y-2 overflow-hidden">
         {messages.map((message, index) => (
           <div key={`${message.from}-${index}-${message.text.slice(0, 12)}`} className={cn("flex", message.from === "akeno" ? "justify-start" : "justify-end")}>
             <div
               className={cn(
-                "max-w-[84%] rounded-lg px-4 py-3 text-sm leading-6 shadow",
+                "max-w-[88%] rounded-lg px-3 py-2 text-xs leading-4 shadow",
                 message.from === "akeno" ? "bg-white text-slate-800" : "bg-[#d9fdd3] text-slate-900"
               )}
             >
@@ -738,16 +741,24 @@ function LeadCard({
   ownerAlerted: boolean;
 }) {
   return (
-    <div className="rounded-lg border border-white/12 bg-white/8 p-4 shadow-2xl backdrop-blur">
+    <div className="rounded-lg border border-white/12 bg-white/8 p-3 shadow-2xl backdrop-blur">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-sm font-semibold text-cyan-100">Live CRM preview</p>
-          <h3 className="mt-1 text-2xl font-bold">Lead packet</h3>
+          <h3 className="mt-1 text-xl font-bold">Lead packet</h3>
         </div>
-        <UrgencyBadge urgency={lead.urgency} />
+        <div className="flex shrink-0 flex-col items-end gap-2">
+          <UrgencyBadge urgency={lead.urgency} />
+          {onReview ? (
+            <Button size="sm" className="next-action-pulse bg-white text-slate-950 hover:bg-cyan-100" onClick={onReview}>
+              <UserCheck className="h-4 w-4" />
+              Mark human reviewed
+            </Button>
+          ) : null}
+        </div>
       </div>
 
-      <div className="mt-5 grid gap-2 md:grid-cols-2">
+      <div className="mt-3 grid gap-2 md:grid-cols-2">
         {leadRows.map(([label, value]) => (
           <div key={label} className="rounded-md border border-white/10 bg-white/7 px-3 py-2 text-sm">
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{label}</p>
@@ -756,12 +767,12 @@ function LeadCard({
         ))}
       </div>
 
-      <div className="mt-4 rounded-lg border border-cyan-300/20 bg-cyan-300/10 p-4">
+      <div className="mt-3 rounded-lg border border-cyan-300/20 bg-cyan-300/10 p-3">
         <p className="text-sm font-semibold text-cyan-100">AI summary</p>
-        <p className="mt-2 text-sm leading-6 text-slate-200">{lead.summary}</p>
+        <p className="mt-1.5 text-sm leading-5 text-slate-200">{lead.summary}</p>
       </div>
 
-      <div className="mt-4">
+      <div className="mt-3">
         <div className="flex items-center justify-between text-sm">
           <span className="font-semibold text-white">Qualification confidence</span>
           <span className="text-cyan-100">{lead.confidence}%</span>
@@ -769,7 +780,7 @@ function LeadCard({
         <Progress value={lead.confidence} className="mt-2 bg-white/10" />
       </div>
 
-      <div className={cn("mt-4 rounded-lg border p-4", ownerAlerted ? "border-orange-300/30 bg-orange-500/12" : "border-white/10 bg-white/7")}>
+      <div className={cn("mt-3 rounded-lg border p-3", ownerAlerted ? "border-orange-300/30 bg-orange-500/12" : "border-white/10 bg-white/7")}>
         <div className="flex items-start gap-3">
           <span className={cn("grid h-10 w-10 place-items-center rounded-md", ownerAlerted ? "bg-orange-400 text-slate-950" : "bg-white/10 text-cyan-200")}>
             {ownerAlerted ? <BellRing className="h-5 w-5" /> : <Workflow className="h-5 w-5" />}
@@ -781,12 +792,6 @@ function LeadCard({
         </div>
       </div>
 
-      {onReview ? (
-        <Button className="mt-4 w-full bg-white text-slate-950 hover:bg-cyan-100" onClick={onReview}>
-          <UserCheck className="h-4 w-4" />
-          Mark human reviewed
-        </Button>
-      ) : null}
     </div>
   );
 }

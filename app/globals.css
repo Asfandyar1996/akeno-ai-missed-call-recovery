@@ -183,6 +183,24 @@ body {
   animation: typingBounce 0.9s ease-in-out infinite;
 }
 
+.next-action-pulse {
+  position: relative;
+  isolation: isolate;
+  box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.55), 0 14px 30px rgba(8, 145, 178, 0.2);
+  animation: nextActionPulse 1.35s ease-in-out infinite;
+}
+
+.next-action-pulse::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  z-index: -1;
+  border-radius: inherit;
+  border: 2px solid rgba(103, 232, 249, 0.58);
+  opacity: 0;
+  animation: nextActionRing 1.35s ease-in-out infinite;
+}
+
 @keyframes chatPop {
   from {
     opacity: 0;
@@ -338,6 +356,30 @@ body {
   40% {
     transform: translateY(-4px);
     opacity: 1;
+  }
+}
+
+@keyframes nextActionPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.46), 0 14px 30px rgba(8, 145, 178, 0.18);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(34, 211, 238, 0), 0 18px 40px rgba(34, 211, 238, 0.26);
+  }
+}
+
+@keyframes nextActionRing {
+  0% {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  35% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.08);
   }
 }
 
