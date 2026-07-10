@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
-  BellRing,
   Bot,
   CheckCircle2,
   ClipboardList,
@@ -30,6 +29,7 @@ import { cn } from "@/lib/utils";
 type ScenarioId = "active-leak" | "storm-damage" | "replacement" | "inspection";
 type Stage = 0 | 1 | 2 | 3 | 4 | 5;
 type Message = { from: "homeowner" | "akeno"; text: string; label?: string };
+type QuickReply = { text: string; response: string };
 type LeadState = {
   customer: string;
   phone: string;
@@ -64,8 +64,7 @@ const scenarios: Record<
     title: string;
     icon: typeof CloudRain;
     description: string;
-    firstReply: string;
-    followUps: string[];
+    quickReplies: QuickReply[];
     lead: LeadState;
   }
 > = {
@@ -73,11 +72,23 @@ const scenarios: Record<
     title: "Active leak",
     icon: CloudRain,
     description: "Water is entering the home now. This should become an urgent lead.",
-    firstReply: "Yes, water is actively coming in. 1842 Cedar Grove Dr, Dallas. Tonight after 8 works.",
-    followUps: [
-      "Residential shingle roof, about 12 years old.",
-      "I can send photos of the ceiling and roof.",
-      "I may file insurance, but I need someone to stop the leak first."
+    quickReplies: [
+      {
+        text: "Yes, water is actively coming in. 1842 Cedar Grove Dr, Dallas. Tonight after 8 works.",
+        response: "I marked this urgent and captured your address and preferred window. The roofing team will confirm before dispatch."
+      },
+      {
+        text: "I can send photos of the ceiling and roof. Water is still coming in at 1842 Cedar Grove Dr.",
+        response: "Please send the photos here. I flagged active water intrusion and attached the address for urgent review."
+      },
+      {
+        text: "Residential shingle roof, about 12 years old. Kitchen ceiling is leaking at 1842 Cedar Grove Dr.",
+        response: "Got it. I captured roof type, age, leak location, and address, then routed this as urgent."
+      },
+      {
+        text: "I may file insurance, but I need someone to stop the leak first. 1842 Cedar Grove Dr, Dallas.",
+        response: "Understood. I noted possible insurance context, but the urgent action is stopping water entry first."
+      }
     ],
     lead: {
       customer: "Sarah Mitchell",
@@ -97,11 +108,23 @@ const scenarios: Record<
     title: "Storm damage",
     icon: Siren,
     description: "A hail/wind lead needs qualification, photos, and insurance context.",
-    firstReply: "Address is 9308 Lake Hollow Ct, Plano. Residential. No active leak.",
-    followUps: [
-      "The roof is about 9 years old.",
-      "I have photos of shingles in the yard.",
-      "Insurance has not been opened yet. Tomorrow afternoon is best."
+    quickReplies: [
+      {
+        text: "Address is 9308 Lake Hollow Ct, Plano. Residential. No active leak.",
+        response: "Thanks. I captured storm damage with no active leak, so this goes to elevated inspection follow-up."
+      },
+      {
+        text: "I have photos of shingles in the yard at 9308 Lake Hollow Ct. No water is coming inside.",
+        response: "Please send the photos here. I marked this as storm damage without active water intrusion."
+      },
+      {
+        text: "Insurance has not been opened yet. Tomorrow afternoon is best for 9308 Lake Hollow Ct.",
+        response: "I captured the insurance status and preferred timing. The team will confirm an inspection slot."
+      },
+      {
+        text: "The roof is about 9 years old. Hail hit the area and I see loose shingles.",
+        response: "Got it. I noted roof age, hail context, and loose shingles for storm-damage triage."
+      }
     ],
     lead: {
       customer: "Marcus Reed",
@@ -121,11 +144,23 @@ const scenarios: Record<
     title: "Roof replacement",
     icon: Home,
     description: "A non-urgent high-value quote request should still be captured cleanly.",
-    firstReply: "It is a residential roof in Frisco, about 22 years old.",
-    followUps: [
-      "No leak, but the inspection report says it is near end of life.",
-      "Weekday mornings work best.",
-      "Address is 411 Sycamore Bend."
+    quickReplies: [
+      {
+        text: "It is a residential roof at 411 Sycamore Bend in Frisco, about 22 years old.",
+        response: "Thanks. I captured this as a replacement estimate and noted the roof age and address."
+      },
+      {
+        text: "No leak, but the inspection report says it is near end of life. Address is 411 Sycamore Bend.",
+        response: "Understood. I marked this as a routine replacement quote and noted the inspection-report context."
+      },
+      {
+        text: "Weekday mornings work best for an estimate at 411 Sycamore Bend.",
+        response: "Got it. I captured the preferred appointment window and routed this to sales scheduling."
+      },
+      {
+        text: "I need a roof replacement quote before listing the property for sale.",
+        response: "I captured the sales timeline and quote request. The team will confirm an estimate window."
+      }
     ],
     lead: {
       customer: "Dana Collins",
@@ -145,11 +180,23 @@ const scenarios: Record<
     title: "Routine inspection",
     icon: ClipboardList,
     description: "A normal inspection request should be routed without emergency escalation.",
-    firstReply: "No active leak. Address is 7620 Ridge Creek Ln, Fort Worth.",
-    followUps: [
-      "It is residential, roof age unknown.",
-      "Tuesday or Wednesday works.",
-      "I only need a condition report and repair recommendations."
+    quickReplies: [
+      {
+        text: "No active leak. Address is 7620 Ridge Creek Ln, Fort Worth.",
+        response: "Thanks. I captured this as a routine inspection with no active leak."
+      },
+      {
+        text: "It is residential, roof age unknown. I need an inspection at 7620 Ridge Creek Ln.",
+        response: "Got it. I noted property type, unknown roof age, and inspection address."
+      },
+      {
+        text: "Tuesday or Wednesday works for a condition report and repair recommendations.",
+        response: "I captured the preferred timing and inspection goal. The office will confirm a slot."
+      },
+      {
+        text: "I only need a condition report and repair recommendations. There is no emergency.",
+        response: "Understood. I marked this as routine and kept it out of the urgent dispatch path."
+      }
     ],
     lead: {
       customer: "Evan Parker",
@@ -183,7 +230,7 @@ export function MissedCallSimulator() {
   const [scenarioId, setScenarioId] = useState<ScenarioId>("active-leak");
   const [stage, setStage] = useState<Stage>(0);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState(scenarios["active-leak"].firstReply);
+  const [input, setInput] = useState(scenarios["active-leak"].quickReplies[0].text);
   const [lead, setLead] = useState<LeadState>(emptyLead);
   const [typing, setTyping] = useState(false);
   const [ownerAlerted, setOwnerAlerted] = useState(false);
@@ -214,7 +261,7 @@ export function MissedCallSimulator() {
 
   const chooseScenario = (next: ScenarioId) => {
     setScenarioId(next);
-    setInput(scenarios[next].firstReply);
+    setInput(scenarios[next].quickReplies[0].text);
     setStage(0);
     setMessages([]);
     setLead(emptyLead);
@@ -321,7 +368,7 @@ export function MissedCallSimulator() {
               ) : null}
 
               {stage === 4 ? (
-                <LeadPacketStep lead={lead} leadRows={leadRows} messages={messages} ownerAlerted={ownerAlerted} onReview={markHumanReview} />
+                <LeadPacketStep lead={lead} leadRows={leadRows} messages={messages} onReview={markHumanReview} />
               ) : null}
 
               {stage === 5 ? (
@@ -351,22 +398,22 @@ function ChecklistPanel({
   stage: Stage;
 }) {
   return (
-    <aside className="min-h-0 overflow-hidden rounded-lg border border-white/12 bg-white/8 p-3 shadow-2xl backdrop-blur">
+    <aside className="min-h-0 overflow-hidden rounded-lg border border-white/12 bg-white/8 p-2.5 shadow-2xl backdrop-blur">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-sm font-semibold text-cyan-100">Demo checklist</p>
-          <h2 className="mt-1 text-xl font-bold">Step-by-step</h2>
+          <h2 className="mt-1 text-lg font-bold">Step-by-step</h2>
         </div>
         <Badge className="bg-cyan-300/15 text-cyan-100">{progress}%</Badge>
       </div>
-      <Progress value={progress} className="mt-3 bg-white/10" />
+      <Progress value={progress} className="mt-2 bg-white/10" />
 
-      <div className="mt-3 rounded-lg border border-white/10 bg-white/7 p-3">
+      <div className="mt-2 rounded-lg border border-white/10 bg-white/7 p-2.5">
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Selected scenario</p>
         <p className="mt-1 font-semibold text-white">{scenarioTitle}</p>
       </div>
 
-      <div className="mt-2 space-y-1.5">
+      <div className="mt-2 space-y-1">
         {checklist.map((item, index) => {
           const done = completeKeys.includes(item.key);
           const active = stage === item.stage;
@@ -375,7 +422,7 @@ function ChecklistPanel({
               <div className="flex flex-col items-center">
                 <span
                   className={cn(
-                    "grid h-9 w-9 place-items-center rounded-full border text-sm font-bold",
+                    "grid h-8 w-8 place-items-center rounded-full border text-xs font-bold",
                     done
                       ? "border-emerald-300 bg-emerald-400 text-slate-950"
                       : active
@@ -385,28 +432,28 @@ function ChecklistPanel({
                 >
                   {done ? <CheckCircle2 className="h-4 w-4" /> : index + 1}
                 </span>
-                {index < checklist.length - 1 ? <span className={cn("h-4 w-px", done ? "bg-emerald-300/70" : "bg-white/12")} /> : null}
+                {index < checklist.length - 1 ? <span className={cn("h-3 w-px", done ? "bg-emerald-300/70" : "bg-white/12")} /> : null}
               </div>
-              <div className="pt-1">
+              <div className="pt-0.5">
                 <p className={cn("text-sm font-semibold", done ? "text-white" : active ? "text-cyan-100" : "text-white/54")}>{item.label}</p>
-                <p className="mt-0.5 text-xs leading-4 text-slate-400">{item.detail}</p>
+                <p className="mt-0.5 text-[11px] leading-3.5 text-slate-400">{item.detail}</p>
               </div>
             </div>
           );
         })}
       </div>
 
-      <div className={cn("mt-3 rounded-lg border p-3", ownerAlerted ? "border-orange-300/40 bg-orange-500/14" : "border-white/10 bg-white/7")}>
+      <div className={cn("mt-2 rounded-lg border p-2.5", ownerAlerted ? "border-orange-300/40 bg-orange-500/14" : "border-white/10 bg-white/7")}>
         <div className="flex items-center gap-2 text-sm font-semibold">
           {ownerAlerted ? <AlertTriangle className="h-4 w-4 text-orange-300" /> : <ShieldCheck className="h-4 w-4 text-cyan-200" />}
           {ownerAlerted ? "Owner alert queued" : "No escalation yet"}
         </div>
-        <p className="mt-1 text-xs leading-4 text-slate-300">
+        <p className="mt-1 text-[11px] leading-3.5 text-slate-300">
           {ownerAlerted ? "Urgent or elevated leads are routed before they go cold." : "Routine leads stay in normal dispatch."}
         </p>
       </div>
 
-      <Button variant="outline" className="mt-2 w-full border-white/16 bg-white/8 text-white hover:bg-white/12" onClick={onReset}>
+      <Button variant="outline" className="mt-2 h-9 w-full border-white/16 bg-white/8 text-white hover:bg-white/12" onClick={onReset}>
         <RefreshCcw className="h-4 w-4" />
         Reset demo
       </Button>
@@ -529,14 +576,14 @@ function ReplyStep({
         <div className="rounded-lg border border-white/12 bg-white/8 p-3">
           <p className="text-sm font-semibold text-cyan-100">Homeowner reply</p>
           <div className="mt-3 flex flex-wrap gap-2">
-            {[scenario.firstReply, ...scenario.followUps].map((reply) => (
+            {scenario.quickReplies.map((reply) => (
               <button
-                key={reply}
+                key={reply.text}
                 type="button"
-                onClick={() => onInput(reply)}
+                onClick={() => onInput(reply.text)}
                 className="rounded-full border border-white/14 bg-white/8 px-3 py-1.5 text-xs font-semibold text-slate-100 hover:bg-white/12"
               >
-                {reply}
+                {reply.text}
               </button>
             ))}
           </div>
@@ -595,14 +642,12 @@ function LeadPacketStep({
   lead,
   leadRows,
   messages,
-  onReview,
-  ownerAlerted
+  onReview
 }: {
   lead: LeadState;
   leadRows: string[][];
   messages: Message[];
   onReview: () => void;
-  ownerAlerted: boolean;
 }) {
   return (
     <div>
@@ -614,7 +659,7 @@ function LeadPacketStep({
       />
       <div className="mt-3 grid gap-3 xl:grid-cols-[0.9fr_1fr]">
         <PhoneThread messages={messages} typing={false} />
-        <LeadCard lead={lead} leadRows={leadRows} ownerAlerted={ownerAlerted} onReview={onReview} />
+        <LeadCard lead={lead} leadRows={leadRows} onReview={onReview} />
       </div>
     </div>
   );
@@ -638,29 +683,36 @@ function ReviewStep({
       <StepHeader
         eyebrow="Step 6"
         icon={UserCheck}
-        title="Human review completed"
-        text="The AI has captured and prepared the lead. A human still confirms dispatch, pricing, insurance, and service commitments."
+        title="CRM updated and team notified"
+        text="Akeno has captured the lead, updated the CRM preview, and sent the handoff to the right roofing team member."
       />
       <div className="mt-3 rounded-lg border border-emerald-300/30 bg-emerald-400/12 p-3">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center gap-3">
             <span className="grid h-10 w-10 place-items-center rounded-full bg-emerald-400 text-slate-950">
               <CheckCircle2 className="h-5 w-5" />
             </span>
             <div>
-              <p className="font-semibold text-white">Ready for roofing team follow-up</p>
-              <p className="mt-0.5 text-sm leading-5 text-slate-300">Qualified, summarized, routed, and marked for human confirmation.</p>
+              <p className="font-semibold text-white">Lead handoff completed</p>
+              <p className="mt-0.5 text-sm leading-5 text-slate-300">CRM updated, owner alert sent, and dispatcher follow-up assigned.</p>
             </div>
           </div>
-          <Button className="next-action-pulse bg-white text-slate-950 hover:bg-cyan-100" onClick={onReset}>
-            <RefreshCcw className="h-4 w-4" />
-            Run another scenario
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            {["CRM updated", ownerAlerted ? "Owner alerted" : "Office queue updated", "Dispatcher assigned"].map((item) => (
+              <span key={item} className="rounded-full border border-emerald-300/30 bg-emerald-300/12 px-3 py-1 text-xs font-bold text-emerald-100">
+                {item}
+              </span>
+            ))}
+            <Button className="next-action-pulse bg-white text-slate-950 hover:bg-cyan-100" onClick={onReset}>
+              <RefreshCcw className="h-4 w-4" />
+              Run another scenario
+            </Button>
+          </div>
         </div>
       </div>
       <div className="mt-3 grid gap-3 xl:grid-cols-[0.9fr_1fr]">
         <PhoneThread messages={messages} typing={false} />
-        <LeadCard lead={lead} leadRows={leadRows} ownerAlerted={ownerAlerted} />
+        <LeadCard lead={lead} leadRows={leadRows} reviewed />
       </div>
     </div>
   );
@@ -701,7 +753,7 @@ function PhoneThread({ messages, typing }: { messages: Message[]; typing: boolea
         </div>
         <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-800">Live</span>
       </div>
-      <div className="h-[272px] space-y-2 overflow-hidden">
+      <div className="h-[252px] space-y-2 overflow-hidden">
         {messages.map((message, index) => (
           <div key={`${message.from}-${index}-${message.text.slice(0, 12)}`} className={cn("flex", message.from === "akeno" ? "justify-start" : "justify-end")}>
             <div
@@ -733,15 +785,15 @@ function LeadCard({
   lead,
   leadRows,
   onReview,
-  ownerAlerted
+  reviewed = false
 }: {
   lead: LeadState;
   leadRows: string[][];
   onReview?: () => void;
-  ownerAlerted: boolean;
+  reviewed?: boolean;
 }) {
   return (
-    <div className="rounded-lg border border-white/12 bg-white/8 p-3 shadow-2xl backdrop-blur">
+    <div className="rounded-lg border border-white/12 bg-white/8 p-2.5 shadow-2xl backdrop-blur">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-sm font-semibold text-cyan-100">Live CRM preview</p>
@@ -758,39 +810,44 @@ function LeadCard({
         </div>
       </div>
 
-      <div className="mt-3 grid gap-2 md:grid-cols-2">
+      <div className="mt-2 grid gap-1.5 md:grid-cols-2">
         {leadRows.map(([label, value]) => (
-          <div key={label} className="rounded-md border border-white/10 bg-white/7 px-3 py-2 text-sm">
+          <div key={label} className="rounded-md border border-white/10 bg-white/7 px-2.5 py-1.5 text-sm">
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{label}</p>
             <p className="mt-1 font-semibold text-white">{value}</p>
           </div>
         ))}
       </div>
 
-      <div className="mt-3 rounded-lg border border-cyan-300/20 bg-cyan-300/10 p-3">
-        <p className="text-sm font-semibold text-cyan-100">AI summary</p>
-        <p className="mt-1.5 text-sm leading-5 text-slate-200">{lead.summary}</p>
-      </div>
+      {!reviewed ? (
+        <div className="mt-2 rounded-lg border border-cyan-300/20 bg-cyan-300/10 p-2.5">
+          <p className="text-sm font-semibold text-cyan-100">AI summary</p>
+          <p className="mt-1.5 text-sm leading-5 text-slate-200">{lead.summary}</p>
+        </div>
+      ) : null}
 
-      <div className="mt-3">
-        <div className="flex items-center justify-between text-sm">
+      {!reviewed ? (
+        <div className="mt-2 flex items-center justify-between rounded-md border border-white/10 bg-white/7 px-2.5 py-1.5 text-sm">
           <span className="font-semibold text-white">Qualification confidence</span>
           <span className="text-cyan-100">{lead.confidence}%</span>
         </div>
-        <Progress value={lead.confidence} className="mt-2 bg-white/10" />
-      </div>
+      ) : null}
 
-      <div className={cn("mt-3 rounded-lg border p-3", ownerAlerted ? "border-orange-300/30 bg-orange-500/12" : "border-white/10 bg-white/7")}>
-        <div className="flex items-start gap-3">
-          <span className={cn("grid h-10 w-10 place-items-center rounded-md", ownerAlerted ? "bg-orange-400 text-slate-950" : "bg-white/10 text-cyan-200")}>
-            {ownerAlerted ? <BellRing className="h-5 w-5" /> : <Workflow className="h-5 w-5" />}
-          </span>
-          <div>
-            <p className="text-sm font-semibold text-white">{ownerAlerted ? "Owner alert queued" : "Normal dispatch path"}</p>
-            <p className="mt-1 text-xs leading-5 text-slate-300">{lead.nextAction}</p>
+      {reviewed ? (
+        <div className="mt-2 rounded-lg border border-emerald-300/35 bg-emerald-400/12 p-2">
+          <div className="flex items-start gap-3">
+            <span className="grid h-8 w-8 place-items-center rounded-md bg-emerald-400 text-slate-950">
+              <Database className="h-4 w-4" />
+            </span>
+            <div>
+              <p className="text-sm font-semibold text-white">CRM record updated</p>
+              <p className="mt-0.5 text-xs leading-4 text-slate-300">
+                Lead packet sent to the assigned roofing contact and saved with the full SMS thread.
+              </p>
+            </div>
           </div>
         </div>
-      </div>
+      ) : null}
 
     </div>
   );
@@ -807,17 +864,24 @@ function UrgencyBadge({ urgency }: { urgency: LeadState["urgency"] }) {
 }
 
 function buildReply(scenarioId: ScenarioId, text: string) {
+  const matched = scenarios[scenarioId].quickReplies.find((reply) => normalizeText(reply.text) === normalizeText(text));
+  if (matched) return matched.response;
+
   if (scenarioId === "active-leak") {
-    return "I marked this urgent because water is actively entering. I have the address and preferred window. The roofing team will confirm the exact arrival time before dispatch.";
+    return "I captured this as a possible active leak. Please confirm the address and whether water is still coming in.";
   }
   if (scenarioId === "storm-damage") {
-    return "Thanks. I captured this as storm damage with no active leak. Please send any roof or shingle photos, and the team will confirm an inspection window.";
+    return "Thanks. I captured storm-damage context. Please confirm the address, photos, and whether any water is entering.";
   }
   if (scenarioId === "replacement") {
-    return "Got it. I captured this as a replacement estimate request. The team will confirm an estimate window and can review the inspection report before the visit.";
+    return "Got it. I captured this as a replacement estimate request. Please confirm the address and best appointment window.";
   }
   if (text.toLowerCase().includes("leak")) {
     return "I captured the leak detail and flagged it for review. The team will confirm whether this should be routed as urgent.";
   }
   return "Thanks. I captured the inspection request, address, and preferred appointment timing. The office will confirm an available slot.";
+}
+
+function normalizeText(value: string) {
+  return value.trim().replace(/\s+/g, " ").toLowerCase();
 }
