@@ -30,6 +30,7 @@ test.describe("public product pages", () => {
     await expect(page.getByRole("heading", { name: "Missed Call Recovery Simulator" })).toBeVisible();
     await page.getByRole("button", { name: "Trigger missed call" }).click();
     await expect(page.getByText("Instant missed-call text")).toBeVisible();
+    await page.getByRole("button", { name: "Continue to homeowner reply" }).click();
     await page.getByRole("button", { name: /Yes, water is actively coming in/ }).click();
     await page.getByRole("button", { name: "Send", exact: true }).click();
     await expect(page.getByText("Active kitchen ceiling leak")).toBeVisible();

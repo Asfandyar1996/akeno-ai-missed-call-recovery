@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   AlertTriangle,
   Bot,
@@ -275,12 +275,6 @@ export function MissedCallSimulator() {
     [lead]
   );
 
-  useEffect(() => {
-    if (stage !== 1) return;
-    const timer = window.setTimeout(() => setStage(2), 850);
-    return () => window.clearTimeout(timer);
-  }, [stage]);
-
   const chooseScenario = (next: ScenarioId) => {
     setScenarioId(next);
     setInput(scenarios[next].quickReplies[0].text);
@@ -297,6 +291,8 @@ export function MissedCallSimulator() {
     setOwnerAlerted(false);
     setStage(1);
   };
+
+  const continueToReply = () => setStage(2);
 
   const sendMessage = (text = input) => {
     const clean = text.trim();
@@ -320,7 +316,7 @@ export function MissedCallSimulator() {
         }
       ]);
       setStage(4);
-    }, 900);
+    }, 1600);
   };
 
   const markHumanReview = () => {
@@ -372,7 +368,7 @@ export function MissedCallSimulator() {
                 ) : null}
 
                 {stage === 1 ? (
-                  <MissedCallStep messages={messages} />
+                  <MissedCallStep messages={messages} onContinue={continueToReply} />
                 ) : null}
 
                 {stage === 2 ? (
@@ -533,8 +529,7 @@ function ScenarioStep({
       <div className="mt-3 rounded-lg border border-cyan-300/20 bg-cyan-300/10 p-3">
         <p className="text-sm font-semibold text-cyan-100">What happens next</p>
         <p className="mt-1.5 text-sm leading-5 text-slate-300">
-          Click the button below. The simulator will show the missed call, automatically send Akeno&apos;s recovery SMS,
-          then move you to the homeowner reply step.
+          Click the button below. The simulator will show the missed call and Akeno&apos;s recovery SMS, then wait for you.
         </p>
         <Button size="lg" className="next-action-pulse mt-3 bg-cyan-400 text-slate-950 hover:bg-cyan-300" onClick={onTrigger}>
           <PhoneMissed className="h-4 w-4" />
@@ -545,14 +540,14 @@ function ScenarioStep({
   );
 }
 
-function MissedCallStep({ messages }: { messages: Message[] }) {
+function MissedCallStep({ messages, onContinue }: { messages: Message[]; onContinue: () => void }) {
   return (
     <div>
       <StepHeader
         eyebrow="Step 2"
         icon={PhoneMissed}
         title="Akeno detects the missed call"
-        text="The roofing company missed the call, so Akeno immediately sends a recovery text. The next step appears automatically."
+        text="The roofing company missed the call, so Akeno immediately sends a recovery text. Continue when the viewer has seen it."
       />
       <div className="mt-3 grid gap-3 lg:grid-cols-[0.8fr_1fr]">
         <div className="rounded-lg border border-orange-300/30 bg-orange-500/12 p-3">
@@ -566,6 +561,9 @@ function MissedCallStep({ messages }: { messages: Message[] }) {
             </div>
           </div>
           <p className="mt-3 text-sm leading-5 text-orange-50/85">Akeno starts recovery before the homeowner calls another contractor.</p>
+          <Button className="next-action-pulse mt-4 bg-cyan-400 text-slate-950 hover:bg-cyan-300" onClick={onContinue}>
+            Continue to homeowner reply
+          </Button>
         </div>
         <PhoneThread messages={messages} typing={false} />
       </div>
@@ -607,7 +605,7 @@ function ReplyStep({
                 onClick={() => onInput(reply.text)}
                 className="rounded-full border border-white/14 bg-white/8 px-3 py-1.5 text-xs font-semibold text-slate-100 hover:bg-white/12"
               >
-                {reply.text}
+                {reply.label}
               </button>
             ))}
           </div>
