@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { MissedCallSimulator } from "@/components/demo/missed-call-simulator";
+import { RecoveryStoryDemo } from "@/app/demo-chat/page";
 
 export const metadata: Metadata = {
-  title: "Interactive Demo | Akeno",
-  description: "Interactive Akeno missed-call recovery simulator for roofing lead intake."
+  title: "Recovery Story | Akeno",
+  description: "An animated Akeno missed-call recovery story for roofing lead intake."
 };
 
 export default function DemoPage() {
-  return <MissedCallSimulator />;
+  return <RecoveryStoryDemo />;
 }
