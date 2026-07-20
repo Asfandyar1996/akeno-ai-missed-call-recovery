@@ -19,11 +19,11 @@ test.describe("public product pages", () => {
 
   test("privacy, contact, demo, and styleguide routes render", async ({ page }) => {
     await page.goto("/privacy");
-    await expect(page.getByRole("heading", { name: "Privacy Policy" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Clear handling for every recovered lead." })).toBeVisible();
     await expect(page.getByRole("link", { name: "contact@akenobuilds.com" })).toBeVisible();
 
     await page.goto("/contact");
-    await expect(page.getByRole("heading", { name: "Contact Akeno" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Talk through your missed-call workflow." })).toBeVisible();
     await expect(page.getByText("info@akenobuilds.com")).toBeVisible();
 
     await page.goto("/demo");
