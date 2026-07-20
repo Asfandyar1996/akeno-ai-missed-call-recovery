@@ -3,9 +3,7 @@ import {
   ArrowRight,
   Bot,
   ClipboardCheck,
-  Cloud,
   Database,
-  FileSpreadsheet,
   Gauge,
   Headphones,
   MessageSquareText,
@@ -34,12 +32,6 @@ const features = [
   ["Column-safe Sheets sync", "Map lead fields to existing Google Sheet columns without renaming, deleting, reordering or modifying the sheet structure."],
   ["Owner-grade alerts", "Urgent leads can trigger SMS and email alerts while normal leads flow quietly into dispatch and reporting."],
   ["Sandbox-first setup", "Onboarding, lead routing and integration checks can be reviewed before production credentials are connected."]
-];
-
-const pricing = [
-  ["Launch", "$299/mo", "75 recovered conversations", "SMS follow-up, email alerts and Google Sheets delivery."],
-  ["Growth", "$599/mo", "250 recovered conversations", "Urgent lead routing, CRM sync and weekly performance reports."],
-  ["Market Leader", "$999/mo", "Higher-volume recovery", "Multi-location routing, priority setup and advanced reporting."]
 ];
 
 const faqs = [
@@ -180,10 +172,10 @@ export default function LandingPage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid gap-5 lg:grid-cols-4">
             {[
-              [PhoneCall, "Twilio-ready routing", "Connect a production number later without changing the onboarding flow."],
-              [Bot, "OpenAI agent config", "Greeting, tone, questions, emergency rules and roofing-only instructions."],
-              [Cloud, "n8n workflow handoff", "Workflow staging today, production provisioning when credentials are added."],
-              [FileSpreadsheet, "Google Sheets safe mode", "Append or update leads while preserving the client’s existing sheet columns."]
+              [PhoneCall, "Missed-call response", "When your team cannot answer, the customer gets a fast text back."],
+              [Bot, "Roofing intake", "Akeno asks the right questions and gathers the details your team needs."],
+              [Siren, "Urgent help", "Active leaks and storm damage can be flagged for quick attention."],
+              [Database, "Lead delivery", "Each conversation becomes a clear lead record for your team to follow up."]
             ].map(([Icon, title, text]) => (
               <div key={String(title)} className="rounded-lg border border-white/12 bg-white/7 p-5">
                 <Icon className="h-6 w-6 text-cyan-300" />
@@ -198,21 +190,20 @@ export default function LandingPage() {
       <section id="pricing" className="mx-auto grid max-w-7xl gap-6 px-4 py-16 sm:px-6 lg:grid-cols-[1.2fr_0.8fr] lg:px-8">
         <Card className="bg-white">
           <CardHeader>
-            <CardTitle>Pricing that matches lead volume</CardTitle>
-            <CardDescription>Concrete plans for roofing companies that want missed-call recovery without another dispatcher seat.</CardDescription>
+            <CardTitle>One simple price</CardTitle>
+            <CardDescription>Everything your roofing company needs to turn missed calls into leads your team can follow up.</CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-4 md:grid-cols-3">
-            {pricing.map(([plan, price, allowance, description]) => (
-              <div key={plan} className="rounded-lg border p-5">
-                <h3 className="font-semibold">{plan}</h3>
-                <div className="mt-3 text-3xl font-bold">{price}</div>
-                <p className="mt-2 text-sm font-semibold text-cyan-700">{allowance}</p>
-                <p className="mt-3 text-sm leading-6 text-muted-foreground">{description}</p>
-              </div>
-            ))}
-            <div className="rounded-lg border border-cyan-200 bg-cyan-50 p-5 md:col-span-3">
-              <p className="font-semibold text-cyan-950">$750 one-time onboarding</p>
-              <p className="mt-1 text-sm text-cyan-950/80">Covers workflow setup, message configuration, routing rules and CRM or Google Sheets mapping.</p>
+          <CardContent>
+            <div className="rounded-lg border border-cyan-200 bg-cyan-50 p-6">
+              <p className="text-sm font-semibold uppercase tracking-wide text-cyan-800">Akeno missed-call recovery</p>
+              <div className="mt-2 text-4xl font-bold text-slate-950">$300<span className="text-xl font-semibold text-slate-600">/month</span></div>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-700">When a customer cannot reach your team, Akeno texts back, asks the important roofing questions, and gives your team a clear lead to follow up.</p>
+              <ul className="mt-5 grid gap-3 text-sm font-medium text-slate-800 sm:grid-cols-2">
+                <li className="rounded-md bg-white px-4 py-3">Instant text after a missed call</li>
+                <li className="rounded-md bg-white px-4 py-3">AI collects the job details</li>
+                <li className="rounded-md bg-white px-4 py-3">Urgent leaks are flagged right away</li>
+                <li className="rounded-md bg-white px-4 py-3">Your team receives a ready-to-call lead</li>
+              </ul>
             </div>
           </CardContent>
         </Card>

@@ -37,7 +37,7 @@ export default async function DashboardPage() {
           <CardContent><StatusBadge status={stats.setupStatus} /></CardContent>
         </Card>
         <Card>
-          <CardHeader><CardTitle className="text-base">Twilio status</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-base">Phone response status</CardTitle></CardHeader>
           <CardContent><StatusBadge status="production credentials pending" /></CardContent>
         </Card>
         <Card>

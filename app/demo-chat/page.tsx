@@ -75,7 +75,7 @@ const leadPacket = [
   ["Preferred window", "Tonight after 8:30 PM"]
 ];
 
-export function RecoveryStoryDemo() {
+function DemoChatPage() {
   return (
     <main id="main-content" className="min-h-screen bg-[#07111f] text-white">
       <LandingHeader />
@@ -125,7 +125,7 @@ export function RecoveryStoryDemo() {
   );
 }
 
-export default RecoveryStoryDemo;
+export default DemoChatPage;
 
 function SceneShell({
   children,

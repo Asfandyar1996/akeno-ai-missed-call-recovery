@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { RecoveryStoryDemo } from "@/app/demo-chat/page";
+import RecoveryStoryDemo from "@/app/demo-chat/page";
 
 export const metadata: Metadata = {
   title: "Recovery Story | Akeno",

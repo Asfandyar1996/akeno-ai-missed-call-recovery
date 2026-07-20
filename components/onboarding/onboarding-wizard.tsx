@@ -238,10 +238,10 @@ export function OnboardingWizard() {
     const setup = await fetch("/api/n8n/setup", { method: "POST" });
     setSubmitting(false);
     if (!setup.ok) {
-      setError("Onboarding saved, but workflow staging failed.");
+      setError("Your setup was saved, but activation could not be completed.");
       return;
     }
-    toast({ title: "Setup complete", description: "Workflow staging and dashboard activity were created." });
+    toast({ title: "Setup complete", description: "Your missed-call recovery setup is ready for review." });
     window.location.href = "/dashboard";
   };
 
@@ -288,7 +288,7 @@ export function OnboardingWizard() {
         <div className="flex flex-col gap-2 rounded-lg border bg-white px-4 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm font-semibold">Client setup workspace</p>
-            <p className="text-sm text-muted-foreground">Complete each section, review the generated AI setup, then stage the workflow.</p>
+            <p className="text-sm text-muted-foreground">Complete each section, review your setup, then prepare it for activation.</p>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <span className={`h-2.5 w-2.5 rounded-full ${saveState === "error" ? "bg-red-500" : saveState === "saving" ? "bg-orange-500" : saveState === "saved" ? "bg-emerald-500" : "bg-slate-300"}`} />
@@ -417,7 +417,7 @@ export function OnboardingWizard() {
             ) : null}
 
             {step === 4 ? (
-              <FormSection title="Phone configuration" description="A Twilio number will be connected later. Do not enter Twilio credentials yet.">
+              <FormSection title="Phone configuration" description="We will connect your business number during activation. No account details are needed here.">
                 <div className="grid gap-4 md:grid-cols-2">
                   <Field label="Current business number"><Input {...form.register("phoneConfig.currentBusinessNumber")} /></Field>
                   <Field label="Number calls should forward to"><Input {...form.register("phoneConfig.forwardToNumber")} /></Field>
@@ -452,7 +452,7 @@ export function OnboardingWizard() {
                   <div className="rounded-lg border bg-cyan-50/60 p-4">
                     <p className="text-sm font-semibold text-cyan-950">Nothing technical to configure here.</p>
                     <p className="mt-2 text-sm leading-6 text-cyan-950/78">
-                      We use the business details you already entered to build the missed-call workflow in the background.
+                      We use the business details you already entered to prepare your missed-call response in the background.
                       Your team only needs to confirm the customer-facing tone and add a booking link if you have one.
                     </p>
                   </div>
@@ -546,7 +546,7 @@ export function OnboardingWizard() {
             ) : null}
 
             {step === 8 ? (
-              <FormSection title="Review and submit" description="Confirm the configuration before staging the missed-call recovery workflow.">
+              <FormSection title="Review and submit" description="Confirm the details before preparing your missed-call recovery setup.">
                 <div className="grid gap-3 md:grid-cols-3">
                   {[
                     ["Client identity", values.company.roofingCompanyName ? "Ready" : "Missing company details"],
@@ -602,20 +602,20 @@ export function OnboardingWizard() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base"><Home className="h-4 w-4 text-primary" /> Activation status</CardTitle>
-                <CardDescription>Drafts save through Akeno API routes. Production accounts can be connected after review.</CardDescription>
+                <CardDescription>Your setup is saved for review. We connect the live services after approval.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
-                <div className="flex items-center justify-between"><span>Twilio</span><Badge variant="muted">Credentials pending</Badge></div>
-                <div className="flex items-center justify-between"><span>OpenAI</span><Badge variant="muted">Credentials pending</Badge></div>
-                <div className="flex items-center justify-between"><span>n8n</span><Badge variant="muted">Ready to stage</Badge></div>
-                <div className="flex items-center justify-between"><span>{destination}</span><Badge variant="warning">Authorization pending</Badge></div>
+                <div className="flex items-center justify-between"><span>Phone response</span><Badge variant="muted">Ready to connect</Badge></div>
+                <div className="flex items-center justify-between"><span>Akeno AI intake</span><Badge variant="muted">Ready to review</Badge></div>
+                <div className="flex items-center justify-between"><span>Lead recovery</span><Badge variant="muted">Ready to prepare</Badge></div>
+                <div className="flex items-center justify-between"><span>Lead delivery</span><Badge variant="warning">Needs approval</Badge></div>
               </CardContent>
             </Card>
           </aside>
         </form>
       </div>
 
-      <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)} title="Submit setup?" description="This saves the onboarding profile and stages the missed-call recovery workflow.">
+      <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)} title="Submit setup?" description="This saves your business details and prepares your missed-call recovery setup for review.">
         <div className="flex justify-end gap-3">
           <Button variant="outline" onClick={() => setConfirmOpen(false)}>Cancel</Button>
           <Button onClick={submit} disabled={submitting}>{submitting ? "Submitting..." : "Confirm setup"}</Button>
